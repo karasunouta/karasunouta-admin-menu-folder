@@ -48,6 +48,12 @@ class Menu_Filter {
 		$default_folder  = $options['sub_menues'][0] ?? array();
 		$selected_menues = $default_folder['menues'] ?? array();
 
+		// WPがデフォルトで「ku-submenu」配下に自動生成する同名サブメニューを削除
+		if ( isset( $submenu['ku-submenu'] ) ) {
+			unset( $submenu['ku-submenu'] );
+		}
+		$submenu['ku-submenu'] = array();
+
 		if ( empty( $selected_menues ) ) {
 			return;
 		}
@@ -71,8 +77,8 @@ class Menu_Filter {
 			$menu_slug = $item[2];
 
 			if ( in_array( $menu_slug, $target_slugs, true ) ) {
-				// 自プラグイン（wp-sub-menu）自体の移動は防ぐ
-				if ( 'wp-sub-menu' === $menu_slug || 'wp-sub-menu-edit' === $menu_slug ) {
+				// 自プラグイン自体のメニューや設定メニューの移動は防ぐ
+				if ( 'ku-submenu' === $menu_slug || 'ku-submenu-folder' === $menu_slug || 'options-general.php' === $menu_slug ) {
 					continue;
 				}
 
@@ -87,11 +93,7 @@ class Menu_Filter {
 			}
 		}
 
-		// 設定画面の並び順に従って 「WP Sub Menu」 配下のサブメニューとして登録
-		if ( ! isset( $submenu['wp-sub-menu'] ) || ! is_array( $submenu['wp-sub-menu'] ) ) {
-			$submenu['wp-sub-menu'] = array();
-		}
-
+		// 設定画面の並び順に従って 「KU Submenu」 配下のサブメニューとして登録
 		foreach ( $selected_menues as $config_item ) {
 			$slug = $config_item['menu_slug'];
 
@@ -107,8 +109,8 @@ class Menu_Filter {
 			$capability = $menu_data[1];
 			$url        = $menu_data[2];
 
-			// WP Sub Menu > サブメニュー項目として並行追加
-			$submenu['wp-sub-menu'][] = array(
+			// KU Submenu > サブメニュー項目として並行追加
+			$submenu['ku-submenu'][] = array(
 				$title,
 				$capability,
 				$url,

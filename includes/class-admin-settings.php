@@ -31,59 +31,95 @@ class Settings_Page {
 	public function __construct( Main $main ) {
 		$this->main = $main;
 		add_action( 'admin_menu', array( $this, 'register_menu_page' ), 9 );
+		add_action( 'admin_init', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
 	/**
-	 * メニューページ・サブメニューページの登録
+	 * メニューページの登録
+	 * - 「設定 > KU Submenu Folder」に設定画面を配置
+	 * - トップレベルに「KU Submenu」フォルダ用メニューを配置
 	 */
 	public function register_menu_page() {
-		// トップレベル「WP Sub Menu」の登録
-		add_menu_page(
-			'WP Sub Menu',
-			'WP Sub Menu',
+		// 「設定」の配下に設定ページを追加
+		add_options_page(
+			'KU Submenu Folder',
+			'KU Submenu Folder',
 			'manage_options',
-			'wp-sub-menu',
-			array( $this, 'render_top_menu_page' ),
-			'dashicons-category',
-			99
+			'ku-submenu-folder',
+			array( $this, 'render_settings_page' )
 		);
 
-		// サブメニュー「Edit」の登録
-		add_submenu_page(
-			'wp-sub-menu',
-			__( 'WP Sub Menu 設定', 'ku-submenu-folder' ),
-			'Edit',
+		// トップレベル「KU Submenu」フォルダメニューを追加
+		add_menu_page(
+			'KU Submenu',
+			'KU Submenu',
 			'manage_options',
-			'wp-sub-menu-edit',
-			array( $this, 'render_settings_page' )
+			'ku-submenu',
+			'__return_null',
+			'dashicons-category',
+			99
 		);
 	}
 
 	/**
-	 * トップレベルメニューをクリックした際のデフォルト表示ページ
+	 * フォーム送信（保存）の早期ハンドリング（admin_init）
+	 * PRGパターン（Post-Redirect-Get）により、保存直後のリダイレクトでサイドメニューを即座に更新
 	 */
-	public function render_top_menu_page() {
-		$this->render_settings_page();
+	public function handle_save_settings() {
+		if ( ! isset( $_POST['kusf_save_settings'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'この操作を行う権限がありません。', 'ku-submenu-folder' ) );
+		}
+
+		check_admin_referer( 'kusf_save_settings_action', 'kusf_save_settings_nonce' );
+
+		$saved_menues_json = isset( $_POST['kusf_selected_menues'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_selected_menues'] ) ) : '[]';
+		$decoded_menues    = json_decode( $saved_menues_json, true );
+
+		if ( is_array( $decoded_menues ) ) {
+			$options         = $this->main->get_options();
+			$max_items       = $this->main->get_max_items();
+			$sanitized_items = array();
+
+			$count = 0;
+			foreach ( $decoded_menues as $item ) {
+				if ( $count >= $max_items ) {
+					break;
+				}
+				if ( ! empty( $item['menu_slug'] ) ) {
+					$sanitized_items[] = array(
+						'menu_slug' => sanitize_text_field( $item['menu_slug'] ),
+						'title'     => sanitize_text_field( $item['title'] ?? '' ),
+						'order'     => (int) ( $item['order'] ?? $count ),
+						'data'      => array(
+							'url' => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
+						),
+					);
+					$count++;
+				}
+			}
+
+			$options['sub_menues'][0]['menues'] = $sanitized_items;
+			$this->main->save_options( $options );
+
+			// リダイレクトして即座に画面全体（サイドメニュー含む）を最新状態で再読み込み
+			wp_safe_redirect( admin_url( 'options-general.php?page=ku-submenu-folder&updated=true' ) );
+			exit;
+		}
 	}
 
 	/**
 	 * アセット（CSS / JS）の読み込み
+	 * 親メニュー（KU Submenu）のリンク補正を全管理画面で適用するため、JSは全管理画面で読み込み
 	 *
 	 * @param string $hook_suffix 現在の管理画面フック名.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
-		if ( strpos( $hook_suffix, 'wp-sub-menu' ) === false ) {
-			return;
-		}
-
-		wp_enqueue_style(
-			'kusf-admin-settings-css',
-			KUSF_PLUGIN_URL . 'assets/css/admin-settings.css',
-			array(),
-			KUSF_VERSION
-		);
-
+		// JSは全管理画面でEnqueue（親リンク href の書き換え・クリック補正のため）
 		wp_enqueue_script(
 			'kusf-admin-settings-js',
 			KUSF_PLUGIN_URL . 'assets/js/admin-settings.js',
@@ -98,13 +134,24 @@ class Settings_Page {
 			array(
 				'maxItems'     => $this->main->get_max_items(),
 				'nonce'        => wp_create_nonce( 'kusf_save_settings_nonce' ),
+				'settingsUrl'  => admin_url( 'options-general.php?page=ku-submenu-folder' ),
 				'limitMessage' => sprintf(
 					/* translators: %d: Maximum allowed items */
-					__( 'WP Sub Menu に格納できるメニューは最大 %d 件までです。', 'ku-submenu-folder' ),
+					__( 'KU Submenu に格納できるメニューは最大 %d 件までです。', 'ku-submenu-folder' ),
 					$this->main->get_max_items()
 				),
 			)
 		);
+
+		// CSSは設定画面のみで読込
+		if ( strpos( $hook_suffix, 'ku-submenu-folder' ) !== false ) {
+			wp_enqueue_style(
+				'kusf-admin-settings-css',
+				KUSF_PLUGIN_URL . 'assets/css/admin-settings.css',
+				array(),
+				KUSF_VERSION
+			);
+		}
 	}
 
 	/**
@@ -115,62 +162,22 @@ class Settings_Page {
 			wp_die( esc_html__( 'このページにアクセスする権限がありません。', 'ku-submenu-folder' ) );
 		}
 
-		$options       = $this->main->get_options();
-		$notice_message = '';
-
-		// フォーム送信（保存）の処理
-		if ( isset( $_POST['kusf_save_settings'] ) && check_admin_referer( 'kusf_save_settings_action', 'kusf_save_settings_nonce' ) ) {
-			$saved_menues_json = isset( $_POST['kusf_selected_menues'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_selected_menues'] ) ) : '[]';
-			$decoded_menues    = json_decode( $saved_menues_json, true );
-
-			if ( is_array( $decoded_menues ) ) {
-				$max_items       = $this->main->get_max_items();
-				$sanitized_items = array();
-
-				// 最大件数チェックとサニタイズ
-				$count = 0;
-				foreach ( $decoded_menues as $item ) {
-					if ( $count >= $max_items ) {
-						break;
-					}
-					if ( ! empty( $item['menu_slug'] ) ) {
-						$sanitized_items[] = array(
-							'menu_slug' => sanitize_text_field( $item['menu_slug'] ),
-							'title'     => sanitize_text_field( $item['title'] ?? '' ),
-							'order'     => (int) ( $item['order'] ?? $count ),
-							'data'      => array(
-								'url' => sanitize_text_field( $item['url'] ?? '' ),
-							),
-						);
-						$count++;
-					}
-				}
-
-				// デフォルトフォルダ（folder_default）の構造を維持して更新
-				$options['sub_menues'][0]['menues'] = $sanitized_items;
-				$this->main->save_options( $options );
-
-				$notice_message = __( '設定を保存しました。', 'ku-submenu-folder' );
-			}
-		}
-
-		// 設定済みメニューの取得（folder_default）
+		$options         = $this->main->get_options();
 		$default_folder  = $options['sub_menues'][0] ?? array();
 		$selected_menues = $default_folder['menues'] ?? array();
 		$selected_slugs  = array_column( $selected_menues, 'menu_slug' );
 
-		// 現在登録されている全てのサイドバーメニューを取得
-		$raw_menu = $GLOBALS['menu'] ?? array();
-		$available_menues = $this->get_clean_root_menues( $raw_menu );
+		// 全ルートメニュー項目をクリーニングして取得
+		$available_menues = $this->get_clean_root_menues( $selected_menues );
 
 		?>
 		<div class="wrap kusf-settings-wrap">
-			<h1 class="wp-heading-inline"><?php echo esc_html( $default_folder['title'] ?? 'WP Sub Menu' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'KU Submenu Folder 設定', 'ku-submenu-folder' ); ?></h1>
 			<hr class="wp-header-end">
 
-			<?php if ( ! empty( $notice_message ) ) : ?>
+			<?php if ( isset( $_GET['updated'] ) && 'true' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible">
-					<p><?php echo esc_html( $notice_message ); ?></p>
+					<p><?php esc_html_e( '設定を保存しました。', 'ku-submenu-folder' ); ?></p>
 				</div>
 			<?php endif; ?>
 
@@ -189,7 +196,7 @@ class Settings_Page {
 									$title       = $item['title'];
 									$icon_html   = $item['icon_html'];
 									$is_checked  = in_array( $slug, $selected_slugs, true );
-									$is_disabled = ( 'wp-sub-menu' === $slug );
+									$is_disabled = in_array( $slug, array( 'ku-submenu', 'ku-submenu-folder', 'options-general.php' ), true );
 									?>
 									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?>" data-slug="<?php echo esc_attr( $slug ); ?>" data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>" data-url="<?php echo esc_attr( $item['url'] ); ?>">
 										<div class="kusf-menu-label">
@@ -210,12 +217,12 @@ class Settings_Page {
 						</div>
 					</div>
 
-					<!-- 右側: WP Sub Menu プレビュー・構造カスタマイザー -->
+					<!-- 右側: KU Submenu プレビュー・構造カスタマイザー -->
 					<div class="kusf-preview-container">
 						<div class="kusf-folder-card">
 							<div class="kusf-folder-header">
 								<span class="dashicons dashicons-category"></span>
-								<span class="kusf-folder-title"><?php echo esc_html( $default_folder['title'] ?? 'WP Sub Menu' ); ?></span>
+								<span class="kusf-folder-title"><?php echo esc_html( $default_folder['title'] ?? 'KU Submenu' ); ?></span>
 							</div>
 							<ul class="kusf-folder-sublist" id="kusf-folder-sublist">
 								<?php foreach ( $selected_menues as $index => $sub_item ) : ?>
@@ -248,28 +255,26 @@ class Settings_Page {
 	}
 
 	/**
-	 * グローバル $menu から、表示用にクリーニングされたルートメニュー配列を生成
+	 * グローバル $menu および格納済み設定項目から、すべてのルートメニューを復元・抽出
 	 *
-	 * @param array $raw_menu グローバル $menu.
+	 * @param array $selected_menues 現在保存されている選択項目.
 	 * @return array
 	 */
-	private function get_clean_root_menues( array $raw_menu ): array {
-		$clean = array();
+	private function get_clean_root_menues( array $selected_menues ): array {
+		$clean  = array();
+		$slugs  = array();
+		$raw_menu = $GLOBALS['menu'] ?? array();
 
+		// 1. 現在の $menu から抽出
 		foreach ( $raw_menu as $item ) {
-			// ディバイダーや空項目をスキップ
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
 			}
 
-			$title     = wp_strip_all_tags( $item[0] );
-			$slug      = $item[2];
-			$icon_class = $item[6] ?? 'dashicons-admin-generic';
+			$slug        = $item[2];
+			$clean_title = trim( preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $item[0] ) );
+			$icon_class  = $item[6] ?? 'dashicons-admin-generic';
 
-			// 通知バッジ等のタグを除去したプレーンタイトルと、HTMLタイトルの準備
-			$clean_title = preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $item[0] );
-
-			// アイコンHTMLの組み立て
 			$icon_html = '<span class="dashicons dashicons-admin-generic"></span>';
 			if ( strpos( $icon_class, 'dashicons-' ) === 0 ) {
 				$icon_html = sprintf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
@@ -284,11 +289,30 @@ class Settings_Page {
 
 			$clean[] = array(
 				'slug'      => $slug,
-				'title'     => trim( $clean_title ),
-				'raw_title' => $item[0],
+				'title'     => $clean_title,
 				'url'       => $url,
 				'icon_html' => $icon_html,
 			);
+			$slugs[] = $slug;
+		}
+
+		// 2. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を復元・追記
+		foreach ( $selected_menues as $sel ) {
+			$sel_slug = $sel['menu_slug'] ?? '';
+			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $slugs, true ) ) {
+				$url = $sel['data']['url'] ?? $sel_slug;
+				if ( ! str_contains( $url, '.php' ) && ! str_contains( $url, 'http' ) ) {
+					$url = 'admin.php?page=' . $url;
+				}
+
+				$clean[] = array(
+					'slug'      => $sel_slug,
+					'title'     => $sel['title'] ?? $sel_slug,
+					'url'       => $url,
+					'icon_html' => '<span class="dashicons dashicons-admin-generic"></span>',
+				);
+				$slugs[] = $sel_slug;
+			}
 		}
 
 		return $clean;

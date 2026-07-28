@@ -94,7 +94,7 @@ class Main {
 			'sub_menues' => array(
 				array(
 					'id'       => 'folder_default',
-					'title'    => 'WP Sub Menu',
+					'title'    => 'KU Submenu',
 					'icon'     => 'dashicons-category',
 					'position' => 99,
 					'menues'   => array(),
@@ -109,9 +109,13 @@ class Main {
 
 		$options = wp_parse_args( $saved, $defaults );
 
-		// sub_menues が空の場合の保護
+		// sub_menues が空の場合の保護および旧タイトルの自動更新
 		if ( empty( $options['sub_menues'] ) || ! is_array( $options['sub_menues'] ) ) {
 			$options['sub_menues'] = $defaults['sub_menues'];
+		} else {
+			if ( isset( $options['sub_menues'][0]['title'] ) && ( 'WP Sub Menu' === $options['sub_menues'][0]['title'] || 'KU Submenu Folder' === $options['sub_menues'][0]['title'] ) ) {
+				$options['sub_menues'][0]['title'] = 'KU Submenu';
+			}
 		}
 
 		return $options;

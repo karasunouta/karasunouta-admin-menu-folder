@@ -3,7 +3,7 @@
  * Plugin Name:       KU Submenu Folder
  * Plugin URI:        https://example.com/ku-submenu-folder
  * Description:       WPサイドメニューの各種メニューをフォルダ構造（Sub Menu）内に整理・収納するプラグイン。
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            karasunouta
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // プラグイン定数
-define( 'KUSF_VERSION', '1.0.0' );
+define( 'KUSF_VERSION', '1.0.1' );
 define( 'KUSF_PLUGIN_FILE', __FILE__ );
 define( 'KUSF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KUSF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -45,7 +45,7 @@ add_action( 'plugins_loaded', 'kusf_init' );
 function kusf_plugin_action_links( $links ) {
 	$settings_link = sprintf(
 		'<a href="%s">%s</a>',
-		esc_url( admin_url( 'admin.php?page=wp-sub-menu-edit' ) ),
+		esc_url( admin_url( 'options-general.php?page=ku-submenu-folder' ) ),
 		esc_html__( '設定', 'ku-submenu-folder' )
 	);
 	array_unshift( $links, $settings_link );

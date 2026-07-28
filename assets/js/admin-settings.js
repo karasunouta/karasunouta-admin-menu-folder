@@ -1,8 +1,36 @@
 /**
- * KU Submenu Folder - Admin Settings Script (Vanilla JS)
+ * KU Submenu Folder - Admin Settings & Menu Link Helper (Vanilla JS)
  */
 
 document.addEventListener('DOMContentLoaded', function () {
+	// ----------------------------------------------------------------------
+	// 全管理画面共通: 親メニュー「KU Submenu」のリンク先を設定ページに強制補正
+	// ----------------------------------------------------------------------
+	function fixParentMenuLink() {
+		if (typeof kusfParams === 'undefined' || !kusfParams.settingsUrl) {
+			return;
+		}
+
+		// WPサイドメニューの KU Submenu トップレベルアンカータグを検索
+		const parentAnchors = document.querySelectorAll('#toplevel_page_ku-submenu > a, .toplevel_page_ku-submenu > a');
+		parentAnchors.forEach(function (anchor) {
+			// hrefを強制的に「設定 > KU Submenu Folder」に上書き
+			anchor.setAttribute('href', kusfParams.settingsUrl);
+
+			// クリックイベントで確実に設定ページへ誘導
+			anchor.addEventListener('click', function (e) {
+				e.preventDefault();
+				window.location.href = kusfParams.settingsUrl;
+			});
+		});
+	}
+
+	// 最先頭で必ず実行（他ページでの早期リターンによる中断を防止）
+	fixParentMenuLink();
+
+	// ----------------------------------------------------------------------
+	// 設定画面内UIのリアルタイム操作ロジック
+	// ----------------------------------------------------------------------
 	const pseudoList = document.querySelector('.kusf-pseudo-menu-list');
 	const folderSublist = document.getElementById('kusf-folder-sublist');
 	const hiddenInput = document.getElementById('kusf_selected_menues');
