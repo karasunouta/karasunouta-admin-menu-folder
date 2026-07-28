@@ -48,7 +48,7 @@ class Settings_Page {
 			array( $this, 'render_settings_page' )
 		);
 
-		// トップレベル「KU Submenu」フォルダメニューを追加
+		// トップレベル「KU Submenu」フォルダメニューを追加 (最下部付近 9999)
 		add_menu_page(
 			'KU Submenu',
 			'KU Submenu',
@@ -56,7 +56,7 @@ class Settings_Page {
 			'ku-submenu',
 			'__return_null',
 			'dashicons-category',
-			99
+			9999
 		);
 	}
 

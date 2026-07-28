@@ -123,6 +123,41 @@ class Menu_Filter {
 				unset( $menu[ $item_info['menu_index'] ] );
 			}
 		}
+
+		// KU Submenu 自体をサイドメニューの最下部（「メニューを閉じる」の直上）に再配置
+		$this->reposition_to_bottom( 'ku-submenu' );
+	}
+
+	/**
+	 * 指定したメニュー項目をグローバル $menu の最末尾へ移動
+	 *
+	 * @param string $slug メニュースラグ.
+	 */
+	private function reposition_to_bottom( string $slug ) {
+		global $menu;
+		if ( empty( $menu ) || ! is_array( $menu ) ) {
+			return;
+		}
+
+		$target_key = null;
+		$target_item = null;
+
+		foreach ( $menu as $key => $item ) {
+			if ( isset( $item[2] ) && $item[2] === $slug ) {
+				$target_key = $key;
+				$target_item = $item;
+				break;
+			}
+		}
+
+		if ( null !== $target_key && null !== $target_item ) {
+			unset( $menu[ $target_key ] );
+			// 既存のキーの最大値よりも大きい位置キーを付与して末尾に配置
+			$keys = array_filter( array_keys( $menu ), 'is_numeric' );
+			$max_key = ! empty( $keys ) ? max( $keys ) : 100;
+			$new_key = max( $max_key + 100, 99999 );
+			$menu[ (string) $new_key ] = $target_item;
+		}
 	}
 
 	/**
