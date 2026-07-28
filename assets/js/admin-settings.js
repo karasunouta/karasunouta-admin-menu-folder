@@ -14,10 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		// WPサイドメニューの KU Submenu トップレベルアンカータグを検索
 		const parentAnchors = document.querySelectorAll('#toplevel_page_ku-submenu > a, .toplevel_page_ku-submenu > a');
 		parentAnchors.forEach(function (anchor) {
-			// hrefを強制的に「設定 > KU Submenu Folder」に上書き
 			anchor.setAttribute('href', kusfParams.settingsUrl);
-
-			// クリックイベントで確実に設定ページへ誘導
 			anchor.addEventListener('click', function (e) {
 				e.preventDefault();
 				window.location.href = kusfParams.settingsUrl;
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 
-	// 最先頭で必ず実行（他ページでの早期リターンによる中断を防止）
+	// 最先頭で必ず実行
 	fixParentMenuLink();
 
 	// ----------------------------------------------------------------------
@@ -52,19 +49,24 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	/**
-	 * 右側リストの順番に従って隠しフィールド値をJSON化
+	 * 右側リストの順番に従って隠しフィールド値をJSON化（元の位置とアイコン情報も保存）
 	 */
 	function updateHiddenFieldValue() {
 		const items = folderSublist.querySelectorAll('.kusf-subitem-row');
 		const result = [];
 
 		items.forEach(function (row, index) {
+			const pos = parseFloat(row.getAttribute('data-position')) || 999.0;
+			const iconClass = row.getAttribute('data-icon-class') || '';
+
 			result.push({
 				menu_slug: row.getAttribute('data-slug'),
 				title: row.getAttribute('data-title'),
 				order: index,
 				data: {
-					url: row.getAttribute('data-url') || ''
+					url: row.getAttribute('data-url') || '',
+					original_position: pos,
+					icon_class: iconClass
 				}
 			});
 		});
@@ -93,12 +95,14 @@ document.addEventListener('DOMContentLoaded', function () {
 	/**
 	 * 右側リストに新しい項目DOM要素を生成して返却
 	 */
-	function createSubitemRow(slug, title, url) {
+	function createSubitemRow(slug, title, url, position, iconClass) {
 		const li = document.createElement('li');
 		li.className = 'kusf-subitem-row';
 		li.setAttribute('data-slug', slug);
 		li.setAttribute('data-title', title);
 		li.setAttribute('data-url', url);
+		li.setAttribute('data-position', position || '999');
+		li.setAttribute('data-icon-class', iconClass || '');
 
 		li.innerHTML = `
 			<div class="kusf-subitem-title">
@@ -147,6 +151,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		const slug = itemRow.getAttribute('data-slug');
 		const title = itemRow.getAttribute('data-title');
 		const url = itemRow.getAttribute('data-url');
+		const position = itemRow.getAttribute('data-position');
+		const iconClass = itemRow.getAttribute('data-icon-class');
 
 		if (toggle.checked) {
 			// 現在の右側リスト件数チェック
@@ -158,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 
 			// 右側リストに追加
-			const newRow = createSubitemRow(slug, title, url);
+			const newRow = createSubitemRow(slug, title, url, position, iconClass);
 			folderSublist.appendChild(newRow);
 			itemRow.classList.add('is-selected');
 		} else {

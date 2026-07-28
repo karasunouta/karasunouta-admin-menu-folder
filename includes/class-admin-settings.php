@@ -37,8 +37,6 @@ class Settings_Page {
 
 	/**
 	 * メニューページの登録
-	 * - 「設定 > KU Submenu Folder」に設定画面を配置
-	 * - トップレベルに「KU Submenu」フォルダ用メニューを配置
 	 */
 	public function register_menu_page() {
 		// 「設定」の配下に設定ページを追加
@@ -64,7 +62,7 @@ class Settings_Page {
 
 	/**
 	 * フォーム送信（保存）の早期ハンドリング（admin_init）
-	 * PRGパターン（Post-Redirect-Get）により、保存直後のリダイレクトでサイドメニューを即座に更新
+	 * 元の位置 (original_position) や Icon 情報を含めて精度高く保存
 	 */
 	public function handle_save_settings() {
 		if ( ! isset( $_POST['kusf_save_settings'] ) ) {
@@ -96,7 +94,9 @@ class Settings_Page {
 						'title'     => sanitize_text_field( $item['title'] ?? '' ),
 						'order'     => (int) ( $item['order'] ?? $count ),
 						'data'      => array(
-							'url' => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
+							'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
+							'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
+							'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
 						),
 					);
 					$count++;
@@ -106,7 +106,7 @@ class Settings_Page {
 			$options['sub_menues'][0]['menues'] = $sanitized_items;
 			$this->main->save_options( $options );
 
-			// リダイレクトして即座に画面全体（サイドメニュー含む）を最新状態で再読み込み
+			// リダイレクトして即座に画面全体を最新状態で再読み込み
 			wp_safe_redirect( admin_url( 'options-general.php?page=ku-submenu-folder&updated=true' ) );
 			exit;
 		}
@@ -114,7 +114,6 @@ class Settings_Page {
 
 	/**
 	 * アセット（CSS / JS）の読み込み
-	 * 親メニュー（KU Submenu）のリンク補正を全管理画面で適用するため、JSは全管理画面で読み込み
 	 *
 	 * @param string $hook_suffix 現在の管理画面フック名.
 	 */
@@ -167,7 +166,7 @@ class Settings_Page {
 		$selected_menues = $default_folder['menues'] ?? array();
 		$selected_slugs  = array_column( $selected_menues, 'menu_slug' );
 
-		// 全ルートメニュー項目をクリーニングして取得
+		// 全ルートメニュー項目を元の位置・元のアイコンで完全合成して取得
 		$available_menues = $this->get_clean_root_menues( $selected_menues );
 
 		?>
@@ -186,7 +185,7 @@ class Settings_Page {
 				<input type="hidden" name="kusf_selected_menues" id="kusf_selected_menues" value="<?php echo esc_attr( wp_json_encode( $selected_menues ) ); ?>">
 
 				<div class="kusf-settings-container">
-					<!-- 左側: 擬似WPサイドメニュー -->
+					<!-- 左側: 擬似WPサイドメニュー（元の位置とアイコンで復元） -->
 					<div class="kusf-pseudo-sidebar-wrapper">
 						<div class="kusf-pseudo-sidebar">
 							<ul class="kusf-pseudo-menu-list">
@@ -195,10 +194,18 @@ class Settings_Page {
 									$slug        = $item['slug'];
 									$title       = $item['title'];
 									$icon_html   = $item['icon_html'];
+									$icon_class  = $item['icon_class'];
+									$position    = $item['position'];
 									$is_checked  = in_array( $slug, $selected_slugs, true );
 									$is_disabled = in_array( $slug, array( 'ku-submenu', 'ku-submenu-folder', 'options-general.php' ), true );
 									?>
-									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?>" data-slug="<?php echo esc_attr( $slug ); ?>" data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>" data-url="<?php echo esc_attr( $item['url'] ); ?>">
+									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?>"
+										data-slug="<?php echo esc_attr( $slug ); ?>"
+										data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>"
+										data-url="<?php echo esc_attr( $item['url'] ); ?>"
+										data-position="<?php echo esc_attr( $position ); ?>"
+										data-icon-class="<?php echo esc_attr( $icon_class ); ?>"
+									>
 										<div class="kusf-menu-label">
 											<span class="kusf-menu-icon"><?php echo $icon_html; ?></span>
 											<span class="kusf-menu-title"><?php echo wp_kses_post( $title ); ?></span>
@@ -226,7 +233,13 @@ class Settings_Page {
 							</div>
 							<ul class="kusf-folder-sublist" id="kusf-folder-sublist">
 								<?php foreach ( $selected_menues as $index => $sub_item ) : ?>
-									<li class="kusf-subitem-row" data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ); ?>" data-title="<?php echo esc_attr( $sub_item['title'] ); ?>" data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>">
+									<li class="kusf-subitem-row"
+										data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ); ?>"
+										data-title="<?php echo esc_attr( $sub_item['title'] ); ?>"
+										data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>"
+										data-position="<?php echo esc_attr( $sub_item['data']['original_position'] ?? 999 ); ?>"
+										data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
+									>
 										<div class="kusf-subitem-title">
 											<span class="dashicons dashicons-admin-generic"></span>
 											<span><?php echo esc_html( $sub_item['title'] ); ?></span>
@@ -255,18 +268,18 @@ class Settings_Page {
 	}
 
 	/**
-	 * グローバル $menu および格納済み設定項目から、すべてのルートメニューを復元・抽出
+	 * グローバル $menu および格離された選択済み項目を「元の位置」と「元のアイコン」で忠実に完全再構成
 	 *
-	 * @param array $selected_menues 現在保存されている選択項目.
+	 * @param array $selected_menues 保存されている選択項目.
 	 * @return array
 	 */
 	private function get_clean_root_menues( array $selected_menues ): array {
-		$clean  = array();
-		$slugs  = array();
-		$raw_menu = $GLOBALS['menu'] ?? array();
+		$items_by_position = array();
+		$raw_menu           = $GLOBALS['menu'] ?? array();
+		$existing_slugs     = array();
 
-		// 1. 現在の $menu から抽出
-		foreach ( $raw_menu as $item ) {
+		// 1. 現在の $menu から項目を取得し、並び順キー (float/int) でインデックス
+		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
 			}
@@ -275,46 +288,83 @@ class Settings_Page {
 			$clean_title = trim( preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $item[0] ) );
 			$icon_class  = $item[6] ?? 'dashicons-admin-generic';
 
-			$icon_html = '<span class="dashicons dashicons-admin-generic"></span>';
-			if ( strpos( $icon_class, 'dashicons-' ) === 0 ) {
-				$icon_html = sprintf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
-			} elseif ( strpos( $icon_class, 'data:image' ) === 0 || strpos( $icon_class, 'http' ) === 0 ) {
-				$icon_html = sprintf( '<img src="%s" alt="" class="kusf-custom-icon" />', esc_url( $icon_class ) );
-			}
-
 			$url = $slug;
 			if ( ! str_contains( $slug, '.php' ) && ! str_contains( $slug, 'http' ) ) {
 				$url = 'admin.php?page=' . $slug;
 			}
 
-			$clean[] = array(
-				'slug'      => $slug,
-				'title'     => $clean_title,
-				'url'       => $url,
-				'icon_html' => $icon_html,
+			$items_by_position[ (string) $pos ] = array(
+				'slug'       => $slug,
+				'title'      => $clean_title,
+				'url'        => $url,
+				'position'   => (float) $pos,
+				'icon_class' => $icon_class,
+				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
-			$slugs[] = $slug;
+
+			$existing_slugs[] = $slug;
 		}
 
-		// 2. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を復元・追記
+		// 2. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を「元の位置」「元のアイコン」で復元マージ
 		foreach ( $selected_menues as $sel ) {
 			$sel_slug = $sel['menu_slug'] ?? '';
-			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $slugs, true ) ) {
+			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $existing_slugs, true ) ) {
+				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
+				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
+
+				// キーが重複している場合は微少小数を加算して衝突を回避
+				while ( isset( $items_by_position[ (string) $pos ] ) ) {
+					$pos += 0.001;
+				}
+
 				$url = $sel['data']['url'] ?? $sel_slug;
 				if ( ! str_contains( $url, '.php' ) && ! str_contains( $url, 'http' ) ) {
 					$url = 'admin.php?page=' . $url;
 				}
 
-				$clean[] = array(
-					'slug'      => $sel_slug,
-					'title'     => $sel['title'] ?? $sel_slug,
-					'url'       => $url,
-					'icon_html' => '<span class="dashicons dashicons-admin-generic"></span>',
+				$items_by_position[ (string) $pos ] = array(
+					'slug'       => $sel_slug,
+					'title'      => $sel['title'] ?? $sel_slug,
+					'url'        => $url,
+					'position'   => $pos,
+					'icon_class' => $icon_class,
+					'icon_html'  => $this->build_icon_html( $icon_class ),
 				);
-				$slugs[] = $sel_slug;
+
+				$existing_slugs[] = $sel_slug;
 			}
 		}
 
-		return $clean;
+		// 3. 元の位置 (position) の昇順で正しく並び替え
+		uksort(
+			$items_by_position,
+			function ( $a, $b ) {
+				return (float) $a <=> (float) $b;
+			}
+		);
+
+		return array_values( $items_by_position );
+	}
+
+	/**
+	 * メニュー項目に応じた正しいアイコンHTMLを構築
+	 *
+	 * @param string $icon_class アイコン指定文字列.
+	 * @return string
+	 */
+	private function build_icon_html( string $icon_class ): string {
+		if ( str_contains( $icon_class, 'dashicons-' ) ) {
+			return sprintf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
+		}
+
+		if ( str_contains( $icon_class, 'data:image' ) || str_contains( $icon_class, 'http' ) ) {
+			return sprintf( '<img src="%s" alt="" class="kusf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />', esc_url( $icon_class ) );
+		}
+
+		if ( str_contains( $icon_class, 'svg' ) ) {
+			return sprintf( '<span class="kusf-svg-icon" style="width:18px;height:18px;display:inline-flex;">%s</span>', wp_kses_post( $icon_class ) );
+		}
+
+		return '<span class="dashicons dashicons-admin-generic"></span>';
 	}
 }
