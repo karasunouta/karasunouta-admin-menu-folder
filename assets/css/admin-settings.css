@@ -183,8 +183,23 @@
 	gap: 8px;
 }
 
-.kusf-subitem-title .dashicons {
+.kusf-subitem-title .dashicons,
+.kusf-subitem-title .kusf-menu-icon .dashicons {
 	color: #a7aaad;
+}
+
+.kusf-subitem-title .kusf-menu-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+}
+
+.kusf-subitem-title .kusf-menu-icon img {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
 }
 
 .kusf-subitem-actions {

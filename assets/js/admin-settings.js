@@ -99,6 +99,25 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	/**
+	 * icon_class から対応するアイコンHTMLを生成
+	 */
+	function buildIconHtml(iconClass) {
+		if (!iconClass) {
+			return '<span class="dashicons dashicons-admin-generic"></span>';
+		}
+		if (iconClass.includes('dashicons-')) {
+			return `<span class="dashicons ${escapeHtml(iconClass)}"></span>`;
+		}
+		if (iconClass.includes('data:image') || iconClass.includes('http')) {
+			return `<img src="${escapeHtml(iconClass)}" alt="" class="kusf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />`;
+		}
+		if (iconClass.includes('svg')) {
+			return `<span class="kusf-svg-icon" style="width:18px;height:18px;display:inline-flex;">${iconClass}</span>`;
+		}
+		return '<span class="dashicons dashicons-admin-generic"></span>';
+	}
+
+	/**
 	 * 右側リストに新しい項目DOM要素を生成して返却
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
@@ -115,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		li.innerHTML = `
 			<div class="kusf-subitem-title">
-				<span class="dashicons dashicons-admin-generic"></span>
+				<span class="kusf-menu-icon">${buildIconHtml(iconClass)}</span>
 				<span>${escapeHtml(title)}</span>
 			</div>
 			<div class="kusf-subitem-actions">

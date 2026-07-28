@@ -249,7 +249,7 @@ class Settings_Page {
 										data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
 									>
 										<div class="kusf-subitem-title">
-											<span class="dashicons dashicons-admin-generic"></span>
+											<span class="kusf-menu-icon"><?php echo $this->build_icon_html( $sub_item['data']['icon_class'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 											<span><?php echo esc_html( $sub_item['title'] ); ?></span>
 										</div>
 										<div class="kusf-subitem-actions">
