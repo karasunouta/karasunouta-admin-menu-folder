@@ -41,8 +41,8 @@ class Settings_Page {
 	public function register_menu_page() {
 		// 「設定」の配下に設定ページを追加
 		add_options_page(
-			'KU Submenu Folder',
-			'KU Submenu Folder',
+			__( 'KU Submenu Folder', 'ku-submenu-folder' ),
+			__( 'KU Submenu Folder', 'ku-submenu-folder' ),
 			'manage_options',
 			'ku-submenu-folder',
 			array( $this, 'render_settings_page' )
@@ -50,8 +50,8 @@ class Settings_Page {
 
 		// トップレベル「KU Submenu」フォルダメニューを追加 (最下部付近 9999)
 		add_menu_page(
-			'KU Submenu',
-			'KU Submenu',
+			__( 'KU Submenu', 'ku-submenu-folder' ),
+			__( 'KU Submenu', 'ku-submenu-folder' ),
 			'manage_options',
 			'ku-submenu',
 			'__return_null',
@@ -70,7 +70,7 @@ class Settings_Page {
 		}
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'この操作を行う権限がありません。', 'ku-submenu-folder' ) );
+			wp_die( esc_html__( 'You do not have sufficient permissions to perform this action.', 'ku-submenu-folder' ) );
 		}
 
 		check_admin_referer( 'kusf_save_settings_action', 'kusf_save_settings_nonce' );
@@ -139,9 +139,11 @@ class Settings_Page {
 				'nonce'          => wp_create_nonce( 'kusf_save_settings_nonce' ),
 				'settingsUrl'    => admin_url( 'options-general.php?page=ku-submenu-folder' ),
 				'protectedSlugs' => $this->main->get_protected_slugs(),
+				'moveUp'         => __( 'Move Up', 'ku-submenu-folder' ),
+				'moveDown'       => __( 'Move Down', 'ku-submenu-folder' ),
 				'limitMessage'   => sprintf(
 					/* translators: %d: Maximum allowed items */
-					__( 'KU Submenu に格納できるメニューは最大 %d 件までです。', 'ku-submenu-folder' ),
+					__( 'You can store up to %d menu items in KU Submenu.', 'ku-submenu-folder' ),
 					$this->main->get_max_items()
 				),
 			)
@@ -163,7 +165,7 @@ class Settings_Page {
 	 */
 	public function render_settings_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'このページにアクセスする権限がありません。', 'ku-submenu-folder' ) );
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'ku-submenu-folder' ) );
 		}
 
 		$options         = $this->main->get_options();
@@ -177,12 +179,12 @@ class Settings_Page {
 
 		?>
 		<div class="wrap kusf-settings-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'KU Submenu Folder 設定', 'ku-submenu-folder' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'KU Submenu Folder Settings', 'ku-submenu-folder' ); ?></h1>
 			<hr class="wp-header-end">
 
 			<?php if ( isset( $_GET['updated'] ) && 'true' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( '設定を保存しました。', 'ku-submenu-folder' ); ?></p>
+					<p><?php esc_html_e( 'Settings saved.', 'ku-submenu-folder' ); ?></p>
 				</div>
 			<?php endif; ?>
 
@@ -251,10 +253,10 @@ class Settings_Page {
 											<span><?php echo esc_html( $sub_item['title'] ); ?></span>
 										</div>
 										<div class="kusf-subitem-actions">
-											<button type="button" class="button button-small kusf-move-up" title="上へ" <?php echo 0 === $index ? 'disabled' : ''; ?>>
+											<button type="button" class="button button-small kusf-move-up" title="<?php esc_attr_e( 'Move Up', 'ku-submenu-folder' ); ?>" <?php echo 0 === $index ? 'disabled' : ''; ?>>
 												<span class="dashicons dashicons-arrow-up-alt2"></span>
 											</button>
-											<button type="button" class="button button-small kusf-move-down" title="下へ" <?php echo ( count( $selected_menues ) - 1 === $index ) ? 'disabled' : ''; ?>>
+											<button type="button" class="button button-small kusf-move-down" title="<?php esc_attr_e( 'Move Down', 'ku-submenu-folder' ); ?>" <?php echo ( count( $selected_menues ) - 1 === $index ) ? 'disabled' : ''; ?>>
 												<span class="dashicons dashicons-arrow-down-alt2"></span>
 											</button>
 										</div>
@@ -264,7 +266,7 @@ class Settings_Page {
 						</div>
 
 						<div class="kusf-form-actions">
-							<input type="submit" name="kusf_save_settings" class="button button-primary button-large" value="<?php esc_attr_e( '変更を保存', 'ku-submenu-folder' ); ?>">
+							<input type="submit" name="kusf_save_settings" class="button button-primary button-large" value="<?php esc_attr_e( 'Save Changes', 'ku-submenu-folder' ); ?>">
 						</div>
 					</div>
 				</div>

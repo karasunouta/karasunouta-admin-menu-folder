@@ -1,0 +1,82 @@
+# Copyright (C) 2026 karasunouta
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: KU Submenu Folder 1.0.5\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ku-submenu-folder\n"
+"Last-Translator: karasunouta <info@karasunouta.com>\n"
+"Language-Team: Japanese <ja@li.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-28T17:04:00+00:00\n"
+"PO-Revision-Date: 2026-07-28 17:04+0900\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: ku-submenu-folder\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Plugin Name of the plugin
+#: ku-submenu-folder.php
+#: includes/class-admin-settings.php:44
+#: includes/class-admin-settings.php:45
+msgid "KU Submenu Folder"
+msgstr "KU Submenu Folder"
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+msgid "https://karasunouta.com"
+msgstr "https://karasunouta.com"
+
+#. Description of the plugin
+#: ku-submenu-folder.php:4
+msgid "Organizes and stores various WP side menu items into folder structures (submenus)."
+msgstr "WPサイドメニューの各種メニューをフォルダ構造（Sub Menu）内に整理・収納するプラグイン。"
+
+#. Author of the plugin
+msgid "karasunouta"
+msgstr "karasunouta"
+
+#: ku-submenu-folder.php:53
+msgid "Settings"
+msgstr "設定"
+
+#: includes/class-admin-settings.php:52
+#: includes/class-admin-settings.php:53
+msgid "KU Submenu"
+msgstr "KU Submenu"
+
+#: includes/class-admin-settings.php:71
+msgid "You do not have sufficient permissions to perform this action."
+msgstr "この操作を行う権限がありません。"
+
+#: includes/class-admin-settings.php:139
+#: includes/class-admin-settings.php:247
+msgid "Move Up"
+msgstr "上へ"
+
+#: includes/class-admin-settings.php:140
+#: includes/class-admin-settings.php:250
+msgid "Move Down"
+msgstr "下へ"
+
+#. translators: %d: Maximum allowed items
+#: includes/class-admin-settings.php:143
+msgid "You can store up to %d menu items in KU Submenu."
+msgstr "KU Submenu に格納できるメニューは最大 %d 件までです。"
+
+#: includes/class-admin-settings.php:162
+msgid "You do not have sufficient permissions to access this page."
+msgstr "このページにアクセスする権限がありません。"
+
+#: includes/class-admin-settings.php:175
+msgid "KU Submenu Folder Settings"
+msgstr "KU Submenu Folder 設定"
+
+#: includes/class-admin-settings.php:180
+msgid "Settings saved."
+msgstr "設定を保存しました。"
+
+#: includes/class-admin-settings.php:259
+msgid "Save Changes"
+msgstr "変更を保存"

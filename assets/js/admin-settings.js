@@ -102,6 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * 右側リストに新しい項目DOM要素を生成して返却
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
+		const moveUpText = (typeof kusfParams !== 'undefined' && kusfParams.moveUp) ? kusfParams.moveUp : 'Move Up';
+		const moveDownText = (typeof kusfParams !== 'undefined' && kusfParams.moveDown) ? kusfParams.moveDown : 'Move Down';
+
 		const li = document.createElement('li');
 		li.className = 'kusf-subitem-row';
 		li.setAttribute('data-slug', slug);
@@ -116,10 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
 				<span>${escapeHtml(title)}</span>
 			</div>
 			<div class="kusf-subitem-actions">
-				<button type="button" class="button button-small kusf-move-up" title="上へ">
+				<button type="button" class="button button-small kusf-move-up" title="${escapeHtml(moveUpText)}">
 					<span class="dashicons dashicons-arrow-up-alt2"></span>
 				</button>
-				<button type="button" class="button button-small kusf-move-down" title="下へ">
+				<button type="button" class="button button-small kusf-move-down" title="${escapeHtml(moveDownText)}">
 					<span class="dashicons dashicons-arrow-down-alt2"></span>
 				</button>
 			</div>

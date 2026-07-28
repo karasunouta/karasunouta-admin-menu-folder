@@ -1,0 +1,80 @@
+# Copyright (C) 2026 karasunouta
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: KU Submenu Folder 1.0.5\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ku-submenu-folder\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-28T17:04:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: ku-submenu-folder\n"
+
+#. Plugin Name of the plugin
+#: ku-submenu-folder.php
+#: includes/class-admin-settings.php:44
+#: includes/class-admin-settings.php:45
+msgid "KU Submenu Folder"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+msgid "https://karasunouta.com"
+msgstr ""
+
+#. Description of the plugin
+#: ku-submenu-folder.php:4
+msgid "Organizes and stores various WP side menu items into folder structures (submenus)."
+msgstr ""
+
+#. Author of the plugin
+msgid "karasunouta"
+msgstr ""
+
+#: ku-submenu-folder.php:53
+msgid "Settings"
+msgstr ""
+
+#: includes/class-admin-settings.php:52
+#: includes/class-admin-settings.php:53
+msgid "KU Submenu"
+msgstr ""
+
+#: includes/class-admin-settings.php:71
+msgid "You do not have sufficient permissions to perform this action."
+msgstr ""
+
+#: includes/class-admin-settings.php:139
+#: includes/class-admin-settings.php:247
+msgid "Move Up"
+msgstr ""
+
+#: includes/class-admin-settings.php:140
+#: includes/class-admin-settings.php:250
+msgid "Move Down"
+msgstr ""
+
+#. translators: %d: Maximum allowed items
+#: includes/class-admin-settings.php:143
+msgid "You can store up to %d menu items in KU Submenu."
+msgstr ""
+
+#: includes/class-admin-settings.php:162
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: includes/class-admin-settings.php:175
+msgid "KU Submenu Folder Settings"
+msgstr ""
+
+#: includes/class-admin-settings.php:180
+msgid "Settings saved."
+msgstr ""
+
+#: includes/class-admin-settings.php:259
+msgid "Save Changes"
+msgstr ""
