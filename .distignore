@@ -1,0 +1,15 @@
+.agents
+.distignore
+.git
+.github
+.gitignore
+.karasunouta-com
+.wordpress-org
+.vscode
+node_modules
+package.json
+package-lock.json
+src
+scripts
+webpack.config.js
+languages
