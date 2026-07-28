@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	const pseudoList = document.querySelector('.kusf-pseudo-menu-list');
 	const folderSublist = document.getElementById('kusf-folder-sublist');
 	const hiddenInput = document.getElementById('kusf_selected_menues');
-	const settingsForm = document.getElementById('kusf-settings-form');
 
 	if (!pseudoList || !folderSublist || !hiddenInput) {
 		return;
@@ -39,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	const maxItems = typeof kusfParams !== 'undefined' ? parseInt(kusfParams.maxItems, 10) : 5;
 	const limitMessage = typeof kusfParams !== 'undefined' ? kusfParams.limitMessage : '最大件数に達しました。';
+	const protectedSlugs = (typeof kusfParams !== 'undefined' && Array.isArray(kusfParams.protectedSlugs)) ? kusfParams.protectedSlugs : ['ku-submenu', 'ku-submenu-folder'];
 
 	/**
 	 * 隠しフィールド (JSON) とボタンの有効/無効状態を更新
@@ -49,18 +49,24 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	/**
-	 * 右側リストの順番に従って隠しフィールド値をJSON化（元の位置とアイコン情報も保存）
+	 * 右側リストの順番に従って隠しフィールド値をJSON化（保護対象は除外してバリデーション）
 	 */
 	function updateHiddenFieldValue() {
 		const items = folderSublist.querySelectorAll('.kusf-subitem-row');
 		const result = [];
 
 		items.forEach(function (row, index) {
+			const slug = row.getAttribute('data-slug');
+			if (protectedSlugs.includes(slug)) {
+				row.remove();
+				return;
+			}
+
 			const pos = parseFloat(row.getAttribute('data-position')) || 999.0;
 			const iconClass = row.getAttribute('data-icon-class') || '';
 
 			result.push({
-				menu_slug: row.getAttribute('data-slug'),
+				menu_slug: slug,
 				title: row.getAttribute('data-title'),
 				order: index,
 				data: {
@@ -153,6 +159,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		const url = itemRow.getAttribute('data-url');
 		const position = itemRow.getAttribute('data-position');
 		const iconClass = itemRow.getAttribute('data-icon-class');
+
+		// 保護対象スラグ（自己フォルダや他フォルダ）の場合は強制ブロック
+		if (protectedSlugs.includes(slug)) {
+			toggle.checked = false;
+			return;
+		}
 
 		if (toggle.checked) {
 			// 現在の右側リスト件数チェック

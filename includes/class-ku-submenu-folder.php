@@ -84,6 +84,31 @@ class Main {
 	}
 
 	/**
+	 * 保護対象となるすべてのSub Menuフォルダスラグ一覧を取得
+	 * （自己ネストや相互フォルダ格納を防ぐため）
+	 *
+	 * @return array
+	 */
+	public function get_protected_slugs(): array {
+		$options   = $this->get_options();
+		$protected = array( 'ku-submenu-folder', 'ku-submenu' );
+
+		if ( ! empty( $options['sub_menues'] ) && is_array( $options['sub_menues'] ) ) {
+			foreach ( $options['sub_menues'] as $folder ) {
+				$slug = $folder['slug'] ?? $folder['id'] ?? '';
+				if ( ! empty( $slug ) ) {
+					if ( 'folder_default' === $slug ) {
+						$slug = 'ku-submenu';
+					}
+					$protected[] = $slug;
+				}
+			}
+		}
+
+		return array_unique( $protected );
+	}
+
+	/**
 	 * プラグイン設定を取得（データ構造の標準化を保証）
 	 *
 	 * @return array

@@ -48,7 +48,7 @@
 	border-bottom: none;
 }
 
-.kusf-pseudo-menu-item:hover {
+.kusf-pseudo-menu-item:hover:not(.is-disabled) {
 	background-color: #2c3338;
 	color: #72aee6;
 }
@@ -56,6 +56,17 @@
 .kusf-pseudo-menu-item.is-selected {
 	background-color: #2271b1;
 	color: #ffffff;
+}
+
+.kusf-pseudo-menu-item.is-disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	background-color: #171b1e;
+}
+
+.kusf-pseudo-menu-item.is-disabled input[type="checkbox"] {
+	cursor: not-allowed;
+	opacity: 0.5;
 }
 
 .kusf-menu-label {
@@ -102,7 +113,7 @@
 }
 
 /* ==========================================================================
-   右側: WP Sub Menu プレビュー・カスタマイザー (Preview Container)
+   右側: KU Submenu プレビュー・カスタマイザー (Preview Container)
    ========================================================================== */
 .kusf-preview-container {
 	flex-grow: 1;

@@ -62,7 +62,7 @@ class Settings_Page {
 
 	/**
 	 * フォーム送信（保存）の早期ハンドリング（admin_init）
-	 * 元の位置 (original_position) や Icon 情報を含めて精度高く保存
+	 * 保護対象スラグのサニタイズ（サーバーサイドバリデーション）
 	 */
 	public function handle_save_settings() {
 		if ( ! isset( $_POST['kusf_save_settings'] ) ) {
@@ -81,6 +81,7 @@ class Settings_Page {
 		if ( is_array( $decoded_menues ) ) {
 			$options         = $this->main->get_options();
 			$max_items       = $this->main->get_max_items();
+			$protected_slugs = $this->main->get_protected_slugs();
 			$sanitized_items = array();
 
 			$count = 0;
@@ -88,9 +89,12 @@ class Settings_Page {
 				if ( $count >= $max_items ) {
 					break;
 				}
-				if ( ! empty( $item['menu_slug'] ) ) {
+				$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
+
+				// 保護対象スラグ（自己フォルダ・他フォルダ・設定画面等）が含まれている場合は即排除
+				if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
 					$sanitized_items[] = array(
-						'menu_slug' => sanitize_text_field( $item['menu_slug'] ),
+						'menu_slug' => $slug,
 						'title'     => sanitize_text_field( $item['title'] ?? '' ),
 						'order'     => (int) ( $item['order'] ?? $count ),
 						'data'      => array(
@@ -131,10 +135,11 @@ class Settings_Page {
 			'kusf-admin-settings-js',
 			'kusfParams',
 			array(
-				'maxItems'     => $this->main->get_max_items(),
-				'nonce'        => wp_create_nonce( 'kusf_save_settings_nonce' ),
-				'settingsUrl'  => admin_url( 'options-general.php?page=ku-submenu-folder' ),
-				'limitMessage' => sprintf(
+				'maxItems'       => $this->main->get_max_items(),
+				'nonce'          => wp_create_nonce( 'kusf_save_settings_nonce' ),
+				'settingsUrl'    => admin_url( 'options-general.php?page=ku-submenu-folder' ),
+				'protectedSlugs' => $this->main->get_protected_slugs(),
+				'limitMessage'   => sprintf(
 					/* translators: %d: Maximum allowed items */
 					__( 'KU Submenu に格納できるメニューは最大 %d 件までです。', 'ku-submenu-folder' ),
 					$this->main->get_max_items()
@@ -165,8 +170,9 @@ class Settings_Page {
 		$default_folder  = $options['sub_menues'][0] ?? array();
 		$selected_menues = $default_folder['menues'] ?? array();
 		$selected_slugs  = array_column( $selected_menues, 'menu_slug' );
+		$protected_slugs = $this->main->get_protected_slugs();
 
-		// 全ルートメニュー項目を元の位置・元のアイコンで完全合成して取得
+		// 全ルートメニュー項目を復元・取得
 		$available_menues = $this->get_clean_root_menues( $selected_menues );
 
 		?>
@@ -185,7 +191,7 @@ class Settings_Page {
 				<input type="hidden" name="kusf_selected_menues" id="kusf_selected_menues" value="<?php echo esc_attr( wp_json_encode( $selected_menues ) ); ?>">
 
 				<div class="kusf-settings-container">
-					<!-- 左側: 擬似WPサイドメニュー（元の位置とアイコンで復元） -->
+					<!-- 左側: 擬似WPサイドメニュー（保護対象は disabled 化） -->
 					<div class="kusf-pseudo-sidebar-wrapper">
 						<div class="kusf-pseudo-sidebar">
 							<ul class="kusf-pseudo-menu-list">
@@ -197,9 +203,9 @@ class Settings_Page {
 									$icon_class  = $item['icon_class'];
 									$position    = $item['position'];
 									$is_checked  = in_array( $slug, $selected_slugs, true );
-									$is_disabled = in_array( $slug, array( 'ku-submenu', 'ku-submenu-folder', 'options-general.php' ), true );
+									$is_disabled = in_array( $slug, $protected_slugs, true );
 									?>
-									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?>"
+									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
 										data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>"
 										data-url="<?php echo esc_attr( $item['url'] ); ?>"
@@ -278,7 +284,7 @@ class Settings_Page {
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
 
-		// 1. 現在の $menu から項目を取得し、並び順キー (float/int) でインデックス
+		// 1. 現在の $menu から項目を取得
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -312,7 +318,6 @@ class Settings_Page {
 				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
 				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
 
-				// キーが重複している場合は微少小数を加算して衝突を回避
 				while ( isset( $items_by_position[ (string) $pos ] ) ) {
 					$pos += 0.001;
 				}
@@ -335,7 +340,7 @@ class Settings_Page {
 			}
 		}
 
-		// 3. 元の位置 (position) の昇順で正しく並び替え
+		// 3. 元の位置 (position) の昇順でソート
 		uksort(
 			$items_by_position,
 			function ( $a, $b ) {
