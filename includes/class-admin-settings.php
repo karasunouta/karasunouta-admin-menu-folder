@@ -33,6 +33,25 @@ class Settings_Page {
 		add_action( 'admin_menu', array( $this, 'register_menu_page' ), 9 );
 		add_action( 'admin_init', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'kusf_render_header_action_button', array( $this, 'render_default_header_button' ), 10, 3 );
+	}
+
+	/**
+	 * 通常版デフォルトの「＋ サブメニューフォルダーを追加 [PRO]」ボタン描画
+	 *
+	 * @param bool $is_pro Pro版が有効か.
+	 * @param int  $folder_count 現在のフォルダー数.
+	 * @param int  $max_folders 最大フォルダー数.
+	 */
+	public function render_default_header_button( bool $is_pro, int $folder_count, int $max_folders ) {
+		if ( ! $is_pro ) {
+			?>
+			<button type="button" id="kusf-add-folder-btn" class="button button-secondary kusf-add-btn is-disabled-pro" disabled>
+				<span class="dashicons dashicons-plus-alt2"></span> <?php esc_html_e( 'Add Submenu Folder', 'ku-submenu-folder' ); ?>
+				<span class="kusf-pro-badge">PRO</span>
+			</button>
+			<?php
+		}
 	}
 
 	/**
@@ -62,7 +81,7 @@ class Settings_Page {
 
 	/**
 	 * フォーム送信（保存）の早期ハンドリング（admin_init）
-	 * 保護対象スラグのサニタイズ（サーバーサイドバリデーション）
+	 * 保護対象スラグのサニタイズおよびPro停止時デデュープ（自動重複除去）
 	 */
 	public function handle_save_settings() {
 		if ( ! isset( $_POST['kusf_save_settings'] ) ) {
@@ -75,43 +94,165 @@ class Settings_Page {
 
 		check_admin_referer( 'kusf_save_settings_action', 'kusf_save_settings_nonce' );
 
-		$saved_menues_json = isset( $_POST['kusf_selected_menues'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_selected_menues'] ) ) : '[]';
-		$decoded_menues    = json_decode( $saved_menues_json, true );
+		$saved_folders_json = isset( $_POST['kusf_folders_json'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_folders_json'] ) ) : '[]';
+		$decoded_folders    = json_decode( $saved_folders_json, true );
 
-		if ( is_array( $decoded_menues ) ) {
-			$options         = $this->main->get_options();
+		if ( is_array( $decoded_folders ) ) {
+			$is_pro          = $this->main->is_pro();
+			$max_folders     = $this->main->get_max_folders();
 			$max_items       = $this->main->get_max_items();
 			$protected_slugs = $this->main->get_protected_slugs();
-			$sanitized_items = array();
 
-			$count = 0;
-			foreach ( $decoded_menues as $item ) {
-				if ( $count >= $max_items ) {
-					break;
+			if ( $is_pro ) {
+				// Pro版動作時: 受信した全フォルダーデータをサニタイズ保存
+				$sanitized_folders = array();
+				$folder_count      = 0;
+
+				foreach ( $decoded_folders as $folder_data ) {
+					if ( $folder_count >= $max_folders ) {
+						break;
+					}
+
+					$folder_id    = sanitize_text_field( $folder_data['id'] ?? ( 'folder_' . uniqid() ) );
+					$folder_title = sanitize_text_field( $folder_data['title'] ?? 'KU Submenu' );
+					$folder_icon  = sanitize_text_field( $folder_data['icon'] ?? 'dashicons-category' );
+					$raw_menues   = isset( $folder_data['menues'] ) && is_array( $folder_data['menues'] ) ? $folder_data['menues'] : array();
+
+					$sanitized_items = array();
+					$item_count      = 0;
+
+					foreach ( $raw_menues as $item ) {
+						if ( $item_count >= $max_items ) {
+							break;
+						}
+						$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
+
+						if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
+							$sanitized_items[] = array(
+								'menu_slug' => $slug,
+								'title'     => sanitize_text_field( $item['title'] ?? '' ),
+								'order'     => (int) ( $item['order'] ?? $item_count ),
+								'data'      => array(
+									'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
+									'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
+									'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
+								),
+							);
+							$item_count++;
+						}
+					}
+
+					$sanitized_folders[] = array(
+						'id'       => $folder_id,
+						'title'    => ! empty( $folder_title ) ? $folder_title : 'KU Submenu',
+						'icon'     => ! empty( $folder_icon ) ? $folder_icon : 'dashicons-category',
+						'position' => 99 + $folder_count,
+						'menues'   => $sanitized_items,
+					);
+
+					$folder_count++;
 				}
-				$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
 
-				// 保護対象スラグ（自己フォルダ・他フォルダ・設定画面等）が含まれている場合は即排除
-				if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
-					$sanitized_items[] = array(
-						'menu_slug' => $slug,
-						'title'     => sanitize_text_field( $item['title'] ?? '' ),
-						'order'     => (int) ( $item['order'] ?? $count ),
-						'data'      => array(
-							'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
-							'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
-							'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
+				if ( empty( $sanitized_folders ) ) {
+					$sanitized_folders = array(
+						array(
+							'id'       => 'folder_default',
+							'title'    => 'KU Submenu',
+							'icon'     => 'dashicons-category',
+							'position' => 99,
+							'menues'   => array(),
 						),
 					);
-					$count++;
 				}
+
+				$show_admin_bar_link = isset( $_POST['kusf_show_admin_bar_link'] ) ? 1 : 0;
+				$setting_link_pos    = isset( $_POST['kusf_setting_link_position'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_setting_link_position'] ) ) : 'none';
+				if ( ! in_array( $setting_link_pos, array( 'none', 'first', 'last' ), true ) ) {
+					$setting_link_pos = 'none';
+				}
+
+				$options                          = $this->main->get_raw_options();
+				$options['sub_menues']            = $sanitized_folders;
+				$options['show_admin_bar_link']   = (bool) $show_admin_bar_link;
+				$options['setting_link_position'] = $setting_link_pos;
+				$this->main->save_options( $options );
+
+			} else {
+				// 通常版動作時: 1フォルダー目のみサニタイズ更新 + 休眠中フォルダーからの重複自動除去（デデュープ）
+				$raw_options = $this->main->get_raw_options();
+				$sub_menues  = $raw_options['sub_menues'] ?? array();
+
+				$first_folder_data = $decoded_folders[0] ?? array();
+				$raw_menues        = isset( $first_folder_data['menues'] ) && is_array( $first_folder_data['menues'] ) ? $first_folder_data['menues'] : array();
+
+				$sanitized_first_items = array();
+				$first_slugs           = array();
+				$item_count            = 0;
+
+				foreach ( $raw_menues as $item ) {
+					if ( $item_count >= $max_items ) {
+						break;
+					}
+					$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
+
+					if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
+						$sanitized_first_items[] = array(
+							'menu_slug' => $slug,
+							'title'     => sanitize_text_field( $item['title'] ?? '' ),
+							'order'     => (int) ( $item['order'] ?? $item_count ),
+							'data'      => array(
+								'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
+								'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
+								'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
+							),
+						);
+						$first_slugs[]           = $slug;
+						$item_count++;
+					}
+				}
+
+				// 生データの1フォルダー目を更新 (名前・アイコンはデフォルト保持)
+				if ( ! isset( $sub_menues[0] ) || ! is_array( $sub_menues[0] ) ) {
+					$sub_menues[0] = array(
+						'id'       => 'folder_default',
+						'title'    => 'KU Submenu',
+						'icon'     => 'dashicons-category',
+						'position' => 99,
+						'menues'   => $sanitized_first_items,
+					);
+				} else {
+					$sub_menues[0]['menues'] = $sanitized_first_items;
+				}
+
+				// 休眠中（2フォルダー目以降）から $first_slugs に含まれる重複項目を自動引き抜き
+				if ( count( $sub_menues ) > 1 ) {
+					for ( $i = 1; $i < count( $sub_menues ); $i++ ) {
+						if ( ! empty( $sub_menues[ $i ]['menues'] ) && is_array( $sub_menues[ $i ]['menues'] ) ) {
+							$cleaned_items = array();
+							foreach ( $sub_menues[ $i ]['menues'] as $m_item ) {
+								if ( ! in_array( $m_item['menu_slug'], $first_slugs, true ) ) {
+									$cleaned_items[] = $m_item;
+								}
+							}
+							$sub_menues[ $i ]['menues'] = array_values( $cleaned_items );
+						}
+					}
+				}
+
+				$show_admin_bar_link = isset( $_POST['kusf_show_admin_bar_link'] ) ? 1 : 0;
+				$setting_link_pos    = isset( $_POST['kusf_setting_link_position'] ) ? sanitize_text_field( wp_unslash( $_POST['kusf_setting_link_position'] ) ) : 'none';
+				if ( ! in_array( $setting_link_pos, array( 'none', 'first', 'last' ), true ) ) {
+					$setting_link_pos = 'none';
+				}
+
+				$raw_options['sub_menues']            = array_values( $sub_menues );
+				$raw_options['show_admin_bar_link']   = (bool) $show_admin_bar_link;
+				$raw_options['setting_link_position'] = $setting_link_pos;
+				$this->main->save_options( $raw_options );
 			}
 
-			$options['sub_menues'][0]['menues'] = $sanitized_items;
-			$this->main->save_options( $options );
-
 			// リダイレクトして即座に画面全体を最新状態で再読み込み
-			wp_safe_redirect( admin_url( 'options-general.php?page=ku-submenu-folder&updated=true' ) );
+			wp_safe_redirect( admin_url( 'options-general.php?page=ku-submenu-folder&kusf_updated=true' ) );
 			exit;
 		}
 	}
@@ -135,16 +276,30 @@ class Settings_Page {
 			'kusf-admin-settings-js',
 			'kusfParams',
 			array(
+				'isPro'          => $this->main->is_pro(),
+				'maxFolders'     => $this->main->get_max_folders(),
 				'maxItems'       => $this->main->get_max_items(),
 				'nonce'          => wp_create_nonce( 'kusf_save_settings_nonce' ),
 				'settingsUrl'    => admin_url( 'options-general.php?page=ku-submenu-folder' ),
 				'protectedSlugs' => $this->main->get_protected_slugs(),
 				'moveUp'         => __( 'Move Up', 'ku-submenu-folder' ),
 				'moveDown'       => __( 'Move Down', 'ku-submenu-folder' ),
+				'moveLeft'       => __( 'Move Left', 'ku-submenu-folder' ),
+				'moveRight'      => __( 'Move Right', 'ku-submenu-folder' ),
+				'editFolder'     => __( 'Edit Folder', 'ku-submenu-folder' ),
+				'deleteFolder'   => __( 'Delete Folder', 'ku-submenu-folder' ),
+				'removeItem'     => __( 'Remove Item', 'ku-submenu-folder' ),
+				'confirmDelete'  => __( 'Are you sure you want to delete this folder? Stored menu items will be restored.', 'ku-submenu-folder' ),
 				'limitMessage'   => sprintf(
 					/* translators: %d: Maximum allowed items */
-					__( 'You can store up to %d menu items in KU Submenu.', 'ku-submenu-folder' ),
+					__( 'You can store up to %d menu items per folder.', 'ku-submenu-folder' ),
 					$this->main->get_max_items()
+				),
+				'noItemsSelected' => __( 'No menu items selected', 'ku-submenu-folder' ),
+				'folderLimitMsg' => sprintf(
+					/* translators: %d: Maximum allowed folders */
+					__( 'You can create up to %d submenu folders in Pro version.', 'ku-submenu-folder' ),
+					$this->main->get_max_folders()
 				),
 			)
 		);
@@ -163,26 +318,47 @@ class Settings_Page {
 	/**
 	 * 設定ページの描画処理
 	 */
+	/**
+	 * 設定ページの描画処理
+	 */
 	public function render_settings_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'ku-submenu-folder' ) );
 		}
 
 		$options         = $this->main->get_options();
-		$default_folder  = $options['sub_menues'][0] ?? array();
-		$selected_menues = $default_folder['menues'] ?? array();
-		$selected_slugs  = array_column( $selected_menues, 'menu_slug' );
+		$sub_menues      = $options['sub_menues'] ?? array();
+		$is_pro          = $this->main->is_pro();
+		$max_folders     = $this->main->get_max_folders();
 		$protected_slugs = $this->main->get_protected_slugs();
 
+		// 全フォルダーの選択済みメニュー項目を統合収集
+		$all_selected_menues = array();
+		$selected_slugs      = array();
+
+		foreach ( $sub_menues as $folder ) {
+			if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
+				foreach ( $folder['menues'] as $item ) {
+					$all_selected_menues[] = $item;
+					if ( ! empty( $item['menu_slug'] ) ) {
+						$selected_slugs[] = $item['menu_slug'];
+					}
+				}
+			}
+		}
+
 		// 全ルートメニュー項目を復元・取得
-		$available_menues = $this->get_clean_root_menues( $selected_menues );
+		$available_menues = $this->get_clean_root_menues( $all_selected_menues, $sub_menues );
 
 		?>
 		<div class="wrap kusf-settings-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'KU Submenu Folder Settings', 'ku-submenu-folder' ); ?></h1>
+			<div class="kusf-header-area">
+				<h1 class="wp-heading-inline"><?php esc_html_e( 'KU Submenu Folder Settings', 'ku-submenu-folder' ); ?></h1>
+				<?php do_action( 'kusf_render_header_action_button', $is_pro, count( $sub_menues ), $max_folders ); ?>
+			</div>
 			<hr class="wp-header-end">
 
-			<?php if ( isset( $_GET['updated'] ) && 'true' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php if ( isset( $_GET['kusf_updated'] ) && 'true' === $_GET['kusf_updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible">
 					<p><?php esc_html_e( 'Settings saved.', 'ku-submenu-folder' ); ?></p>
 				</div>
@@ -190,7 +366,7 @@ class Settings_Page {
 
 			<form method="post" action="" id="kusf-settings-form">
 				<?php wp_nonce_field( 'kusf_save_settings_action', 'kusf_save_settings_nonce' ); ?>
-				<input type="hidden" name="kusf_selected_menues" id="kusf_selected_menues" value="<?php echo esc_attr( wp_json_encode( $selected_menues ) ); ?>">
+				<input type="hidden" name="kusf_folders_json" id="kusf_folders_json" value="<?php echo esc_attr( wp_json_encode( $sub_menues ) ); ?>">
 
 				<div class="kusf-settings-container">
 					<!-- 左側: 擬似WPサイドメニュー（保護対象は disabled 化） -->
@@ -205,7 +381,7 @@ class Settings_Page {
 									$icon_class  = $item['icon_class'];
 									$position    = $item['position'];
 									$is_checked  = in_array( $slug, $selected_slugs, true );
-									$is_disabled = in_array( $slug, $protected_slugs, true );
+									$is_disabled = in_array( $slug, $protected_slugs, true ) || ! empty( $item['is_folder'] ) || str_starts_with( $slug, 'ku-submenu' );
 									?>
 									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
@@ -232,37 +408,96 @@ class Settings_Page {
 						</div>
 					</div>
 
-					<!-- 右側: KU Submenu プレビュー・構造カスタマイザー -->
+					<!-- 右側: サブメニューフォルダー プレビュー・マルチグリッドエリア -->
 					<div class="kusf-preview-container">
-						<div class="kusf-folder-card">
-							<div class="kusf-folder-header">
-								<span class="dashicons dashicons-category"></span>
-								<span class="kusf-folder-title"><?php echo esc_html( $default_folder['title'] ?? 'KU Submenu' ); ?></span>
+						<div class="kusf-folders-grid" id="kusf-folders-grid">
+							<?php foreach ( $sub_menues as $f_idx => $folder ) : ?>
+								<?php
+								$f_id    = $folder['id'] ?? ( 'folder_' . $f_idx );
+								$f_title = $folder['title'] ?? 'KU Submenu';
+								$f_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
+								$f_items = $folder['menues'] ?? array();
+								$is_active = ( 0 === $f_idx );
+								?>
+								<div class="kusf-folder-card <?php echo $is_active ? 'is-active' : ''; ?>" data-folder-id="<?php echo esc_attr( $f_id ); ?>" data-icon="<?php echo esc_attr( $f_icon ); ?>">
+									<div class="kusf-folder-header">
+										<div class="kusf-folder-header-left">
+											<span class="kusf-folder-icon"><?php echo $this->build_icon_html( $f_icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+											<span class="kusf-folder-title"><?php echo esc_html( $f_title ); ?></span>
+										</div>
+										<div class="kusf-folder-header-actions">
+											<button type="button" class="kusf-folder-edit-btn <?php echo ( ! $is_pro && $f_idx > 0 ) ? 'is-disabled-pro' : ''; ?>" title="<?php esc_attr_e( 'Edit Folder', 'ku-submenu-folder' ); ?>" <?php echo ( ! $is_pro || $f_idx > 0 ) ? 'disabled' : ''; ?>>
+												<span class="dashicons dashicons-edit"></span>
+											</button>
+											<button type="button" class="kusf-folder-delete-btn <?php echo ( ! $is_pro || 0 === $f_idx ) ? 'is-disabled-pro' : ''; ?>" title="<?php esc_attr_e( 'Delete Folder', 'ku-submenu-folder' ); ?>" <?php echo ( ! $is_pro || 0 === $f_idx ) ? 'disabled' : ''; ?>>
+												<span class="dashicons dashicons-trash"></span>
+											</button>
+										</div>
+									</div>
+									<ul class="kusf-folder-sublist">
+										<?php if ( empty( $f_items ) ) : ?>
+											<li class="kusf-empty-notice"><?php esc_html_e( 'No menu items selected', 'ku-submenu-folder' ); ?></li>
+										<?php else : ?>
+											<?php foreach ( $f_items as $index => $sub_item ) : ?>
+												<li class="kusf-subitem-row"
+													data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ); ?>"
+													data-title="<?php echo esc_attr( $sub_item['title'] ); ?>"
+													data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>"
+													data-position="<?php echo esc_attr( $sub_item['data']['original_position'] ?? 999 ); ?>"
+													data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
+												>
+													<div class="kusf-subitem-title">
+														<span class="kusf-menu-icon"><?php echo $this->build_icon_html( $sub_item['data']['icon_class'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+														<span><?php echo esc_html( $sub_item['title'] ); ?></span>
+													</div>
+													<div class="kusf-subitem-actions">
+														<button type="button" class="button button-small kusf-move-up" title="<?php esc_attr_e( 'Move Up', 'ku-submenu-folder' ); ?>" <?php echo 0 === $index ? 'disabled' : ''; ?>>
+															<span class="dashicons dashicons-arrow-up-alt2"></span>
+														</button>
+														<button type="button" class="button button-small kusf-move-down" title="<?php esc_attr_e( 'Move Down', 'ku-submenu-folder' ); ?>" <?php echo ( count( $f_items ) - 1 === $index ) ? 'disabled' : ''; ?>>
+															<span class="dashicons dashicons-arrow-down-alt2"></span>
+														</button>
+														<!-- 通常版・Pro版共通: 格納済みメニュー項目の解約ボタン -->
+														<button type="button" class="button button-small kusf-item-remove-btn" title="<?php esc_attr_e( 'Remove Item', 'ku-submenu-folder' ); ?>">
+															<span class="dashicons dashicons-no-alt"></span>
+														</button>
+													</div>
+												</li>
+											<?php endforeach; ?>
+										<?php endif; ?>
+									</ul>
+									<div class="kusf-folder-footer-actions">
+										<button type="button" class="button kusf-folder-move-left <?php echo ! $is_pro ? 'is-disabled-pro' : ''; ?>" title="<?php esc_attr_e( 'Move Left', 'ku-submenu-folder' ); ?>" <?php echo ( ! $is_pro || 0 === $f_idx ) ? 'disabled' : ''; ?>>
+											<span class="dashicons dashicons-arrow-left-alt2"></span>
+										</button>
+										<button type="button" class="button kusf-folder-move-right <?php echo ! $is_pro ? 'is-disabled-pro' : ''; ?>" title="<?php esc_attr_e( 'Move Right', 'ku-submenu-folder' ); ?>" <?php echo ( ! $is_pro || count( $sub_menues ) - 1 === $f_idx ) ? 'disabled' : ''; ?>>
+											<span class="dashicons dashicons-arrow-right-alt2"></span>
+										</button>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+
+						<div class="kusf-setting-options-card">
+							<div class="kusf-setting-option-row">
+								<label for="kusf_show_admin_bar_link" class="kusf-setting-option-label">
+									<?php esc_html_e( '管理バーに設定ページへのリンクを表示:', 'ku-submenu-folder' ); ?>
+								</label>
+								<?php $show_admin_bar_link = ! empty( $options['show_admin_bar_link'] ); ?>
+								<input type="checkbox" name="kusf_show_admin_bar_link" id="kusf_show_admin_bar_link" value="1" <?php checked( $show_admin_bar_link ); ?>>
 							</div>
-							<ul class="kusf-folder-sublist" id="kusf-folder-sublist">
-								<?php foreach ( $selected_menues as $index => $sub_item ) : ?>
-									<li class="kusf-subitem-row"
-										data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ); ?>"
-										data-title="<?php echo esc_attr( $sub_item['title'] ); ?>"
-										data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>"
-										data-position="<?php echo esc_attr( $sub_item['data']['original_position'] ?? 999 ); ?>"
-										data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
-									>
-										<div class="kusf-subitem-title">
-											<span class="kusf-menu-icon"><?php echo $this->build_icon_html( $sub_item['data']['icon_class'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-											<span><?php echo esc_html( $sub_item['title'] ); ?></span>
-										</div>
-										<div class="kusf-subitem-actions">
-											<button type="button" class="button button-small kusf-move-up" title="<?php esc_attr_e( 'Move Up', 'ku-submenu-folder' ); ?>" <?php echo 0 === $index ? 'disabled' : ''; ?>>
-												<span class="dashicons dashicons-arrow-up-alt2"></span>
-											</button>
-											<button type="button" class="button button-small kusf-move-down" title="<?php esc_attr_e( 'Move Down', 'ku-submenu-folder' ); ?>" <?php echo ( count( $selected_menues ) - 1 === $index ) ? 'disabled' : ''; ?>>
-												<span class="dashicons dashicons-arrow-down-alt2"></span>
-											</button>
-										</div>
-									</li>
-								<?php endforeach; ?>
-							</ul>
+
+							<div class="kusf-setting-option-row">
+								<label for="kusf_setting_link_position" class="kusf-setting-option-label">
+									<?php esc_html_e( '設定メニューをメニューフォルダーに追加:', 'ku-submenu-folder' ); ?>
+								</label>
+								<?php $setting_link_pos = $options['setting_link_position'] ?? 'none'; ?>
+								<select name="kusf_setting_link_position" id="kusf_setting_link_position" class="kusf-setting-option-select">
+									<option value="none" <?php selected( $setting_link_pos, 'none' ); ?>><?php esc_html_e( '追加しない', 'ku-submenu-folder' ); ?></option>
+									<option value="first" <?php selected( $setting_link_pos, 'first' ); ?>><?php esc_html_e( '先頭に追加', 'ku-submenu-folder' ); ?></option>
+									<option value="last" <?php selected( $setting_link_pos, 'last' ); ?>><?php esc_html_e( '末尾に追加', 'ku-submenu-folder' ); ?></option>
+								</select>
+							</div>
 						</div>
 
 						<div class="kusf-form-actions">
@@ -272,6 +507,8 @@ class Settings_Page {
 				</div>
 			</form>
 		</div>
+
+		<?php do_action( 'kusf_render_admin_modal' ); ?>
 		<?php
 	}
 
@@ -279,9 +516,10 @@ class Settings_Page {
 	 * グローバル $menu および格離された選択済み項目を「元の位置」と「元のアイコン」で忠実に完全再構成
 	 *
 	 * @param array $selected_menues 保存されている選択項目.
+	 * @param array $sub_menues 保存されている全サブメニューフォルダー構造.
 	 * @return array
 	 */
-	private function get_clean_root_menues( array $selected_menues ): array {
+	private function get_clean_root_menues( array $selected_menues, array $sub_menues = array() ): array {
 		$items_by_position = array();
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
@@ -342,7 +580,38 @@ class Settings_Page {
 			}
 		}
 
-		// 3. 元の位置 (position) の昇順でソート
+		// 3. 全サブメニューフォルダー自体（空フォルダー含む）も擬似サイドメニュー項目として順序通りに復元マージ
+		$numeric_keys = array_filter( array_keys( $items_by_position ), 'is_numeric' );
+		$max_existing = ! empty( $numeric_keys ) ? (float) max( $numeric_keys ) : 999.0;
+		$base_pos     = max( 99900.0, $max_existing + 10.0 );
+
+		foreach ( $sub_menues as $idx => $folder ) {
+			$f_id    = $folder['id'] ?? ( 'folder_' . $idx );
+			$f_slug  = ( 0 === $idx ) ? 'ku-submenu' : ( 'ku-submenu-' . $f_id );
+			$f_title = $folder['title'] ?? 'KU Submenu';
+			$f_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
+			$f_pos   = $base_pos + $idx;
+
+			if ( ! in_array( $f_slug, $existing_slugs, true ) && ! in_array( $f_id, $existing_slugs, true ) ) {
+				while ( isset( $items_by_position[ (string) $f_pos ] ) ) {
+					$f_pos += 0.001;
+				}
+
+				$items_by_position[ (string) $f_pos ] = array(
+					'slug'       => $f_slug,
+					'title'      => $f_title,
+					'url'        => 'admin.php?page=' . $f_slug,
+					'position'   => $f_pos,
+					'icon_class' => $f_icon,
+					'icon_html'  => $this->build_icon_html( $f_icon ),
+					'is_folder'  => true,
+				);
+
+				$existing_slugs[] = $f_slug;
+			}
+		}
+
+		// 4. 元の位置 (position) の昇順でソート
 		uksort(
 			$items_by_position,
 			function ( $a, $b ) {

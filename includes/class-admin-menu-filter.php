@@ -44,31 +44,32 @@ class Menu_Filter {
 			return;
 		}
 
-		$options         = $this->main->get_options();
-		$default_folder  = $options['sub_menues'][0] ?? array();
-		$selected_menues = $default_folder['menues'] ?? array();
+		$options    = $this->main->get_options();
+		$sub_menues = $options['sub_menues'] ?? array();
 
-		// WPがデフォルトで「ku-submenu」配下に自動生成する同名サブメニューを削除
-		if ( isset( $submenu['ku-submenu'] ) ) {
-			unset( $submenu['ku-submenu'] );
-		}
-		$submenu['ku-submenu'] = array();
-
-		if ( empty( $selected_menues ) ) {
-			return;
-		}
-
-		$target_slugs = array_column( $selected_menues, 'menu_slug' );
-		if ( empty( $target_slugs ) ) {
+		if ( empty( $sub_menues ) || ! is_array( $sub_menues ) ) {
 			return;
 		}
 
 		// 現在アクティブな画面・親ファイルを特定
 		$current_slug = $plugin_page ?? ( $_GET['page'] ?? $pagenow ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		// 格納対象メニューのインデックスとメニュー元データを検索・抽出
-		$items_to_move = array();
+		// 全フォルダーの格納対象メニューと全ターゲットスラグを収集
+		$all_target_slugs = array();
+		foreach ( $sub_menues as $folder ) {
+			if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
+				foreach ( $folder['menues'] as $item ) {
+					if ( ! empty( $item['menu_slug'] ) ) {
+						$all_target_slugs[] = $item['menu_slug'];
+					}
+				}
+			}
+		}
 
+		$all_target_slugs = array_unique( $all_target_slugs );
+
+		// 元の $menu から対象項目の元データを取得
+		$items_to_move = array();
 		foreach ( $menu as $index => $item ) {
 			if ( empty( $item[2] ) ) {
 				continue;
@@ -76,13 +77,12 @@ class Menu_Filter {
 
 			$menu_slug = $item[2];
 
-			if ( in_array( $menu_slug, $target_slugs, true ) ) {
+			if ( in_array( $menu_slug, $all_target_slugs, true ) ) {
 				// 自プラグイン自体のメニューや設定メニューの移動は防ぐ
-				if ( 'ku-submenu' === $menu_slug || 'ku-submenu-folder' === $menu_slug || 'options-general.php' === $menu_slug ) {
+				if ( 'ku-submenu' === $menu_slug || 'ku-submenu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'ku-submenu-' ) ) {
 					continue;
 				}
 
-				// アクティブ状態のチェック
 				$is_active = $this->is_menu_active( $menu_slug, $current_slug, $parent_file );
 
 				$items_to_move[ $menu_slug ] = array(
@@ -93,70 +93,146 @@ class Menu_Filter {
 			}
 		}
 
-		// 設定画面の並び順に従って 「KU Submenu」 配下のサブメニューとして登録
-		foreach ( $selected_menues as $config_item ) {
-			$slug = $config_item['menu_slug'];
+		// 各フォルダーごとに処理
+		foreach ( $sub_menues as $folder_idx => $folder ) {
+			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
+			$parent_slug  = ( 0 === $folder_idx || 'folder_default' === $folder_id ) ? 'ku-submenu' : 'ku-submenu-' . $folder_id;
+			$folder_title = $folder['title'] ?? 'KU Submenu';
+			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
+			$folder_items = $folder['menues'] ?? array();
 
-			if ( ! isset( $items_to_move[ $slug ] ) ) {
+			// 第2フォルダー以降で親メニューがまだ未登録の場合、動的に追加登録
+			if ( 0 !== $folder_idx && 'folder_default' !== $folder_id ) {
+				// メニュー登録
+				add_menu_page(
+					$folder_title,
+					$folder_title,
+					'manage_options',
+					$parent_slug,
+					'__return_null',
+					$folder_icon,
+					9999 + $folder_idx
+				);
+			} else {
+				// デフォルトフォルダーのタイトル・アイコン反映
+				foreach ( $menu as $k => $m_item ) {
+					if ( isset( $m_item[2] ) && 'ku-submenu' === $m_item[2] ) {
+						$menu[ $k ][0] = $folder_title;
+						$menu[ $k ][6] = $folder_icon;
+						break;
+					}
+				}
+			}
+
+			// サブメニュー構造の初期化
+			if ( isset( $submenu[ $parent_slug ] ) ) {
+				unset( $submenu[ $parent_slug ] );
+			}
+			$submenu[ $parent_slug ] = array();
+
+			if ( empty( $folder_items ) ) {
 				continue;
 			}
 
-			$item_info = $items_to_move[ $slug ];
-			$menu_data = $item_info['menu_data'];
-			$is_active = $item_info['is_active'];
+			foreach ( $folder_items as $config_item ) {
+				$slug = $config_item['menu_slug'];
 
-			$title      = $menu_data[0];
-			$capability = $menu_data[1];
-			$url        = $menu_data[2];
+				if ( ! isset( $items_to_move[ $slug ] ) ) {
+					continue;
+				}
 
-			// KU Submenu > サブメニュー項目として並行追加
-			$submenu['ku-submenu'][] = array(
-				$title,
-				$capability,
-				$url,
-				$title,
-			);
+				$item_info = $items_to_move[ $slug ];
+				$menu_data = $item_info['menu_data'];
+				$is_active = $item_info['is_active'];
 
-			// 非アクティブの場合のみ、元のルートメニューから削除（非表示化）
-			// アクティブの場合は削除しないため、元のサイドメニューにも並行してそのまま表示される
-			if ( ! $is_active ) {
-				unset( $menu[ $item_info['menu_index'] ] );
+				$title      = $menu_data[0];
+				$capability = $menu_data[1];
+				$url        = $menu_data[2];
+
+				$submenu[ $parent_slug ][] = array(
+					$title,
+					$capability,
+					$url,
+					$title,
+				);
+
+				// 非アクティブの場合のみ元のルートメニューから削除（非表示化）
+				if ( ! $is_active && isset( $menu[ $item_info['menu_index'] ] ) ) {
+					unset( $menu[ $item_info['menu_index'] ] );
+				}
 			}
+
+			// 設定項目の自動追加ロジック (none / first / last)
+			$setting_link_pos = $options['setting_link_position'] ?? 'none';
+			if ( 'first' === $setting_link_pos ) {
+				array_unshift(
+					$submenu[ $parent_slug ],
+					array(
+						__( 'Submenu Settings', 'ku-submenu-folder' ),
+						'manage_options',
+						'options-general.php?page=ku-submenu-folder',
+						__( 'Submenu Settings', 'ku-submenu-folder' ),
+					)
+				);
+			} elseif ( 'last' === $setting_link_pos ) {
+				$submenu[ $parent_slug ][] = array(
+					__( 'Submenu Settings', 'ku-submenu-folder' ),
+					'manage_options',
+					'options-general.php?page=ku-submenu-folder',
+					__( 'Submenu Settings', 'ku-submenu-folder' ),
+				);
+			}
+
+			// 各フォルダーの個別処理完了
 		}
 
-		// KU Submenu 自体をサイドメニューの最下部（「メニューを閉じる」の直上）に再配置
-		$this->reposition_to_bottom( 'ku-submenu' );
+		// 全フォルダーをユーザーの設定順に従い、隙間のない連続キーで $menu の最末尾へ一括再配置
+		$this->reposition_all_folders_to_bottom( $sub_menues );
 	}
 
 	/**
-	 * 指定したメニュー項目をグローバル $menu の最末尾へ移動
+	 * 全フォルダー項目をユーザーの設定順（0, 1, 2...）に従い、隙間のない連続キー（+0, +1, +2...）で最末尾へ配置
 	 *
-	 * @param string $slug メニュースラグ.
+	 * @param array $sub_menues サブメニューフォルダー設定配列.
 	 */
-	private function reposition_to_bottom( string $slug ) {
+	private function reposition_all_folders_to_bottom( array $sub_menues ) {
 		global $menu;
 		if ( empty( $menu ) || ! is_array( $menu ) ) {
 			return;
 		}
 
-		$target_key = null;
-		$target_item = null;
+		// 全フォルダーの親スラグ順序を生成
+		$folder_slugs = array();
+		foreach ( $sub_menues as $f_idx => $folder ) {
+			$f_id          = $folder['id'] ?? ( 'folder_' . $f_idx );
+			$parent_slug   = ( 0 === $f_idx || 'folder_default' === $f_id ) ? 'ku-submenu' : 'ku-submenu-' . $f_id;
+			$folder_slugs[] = $parent_slug;
+		}
 
+		// 1. $menu から全フォルダー項目を一旦抽出・保持し、元の位置からは削除
+		$extracted_folders = array();
 		foreach ( $menu as $key => $item ) {
-			if ( isset( $item[2] ) && $item[2] === $slug ) {
-				$target_key = $key;
-				$target_item = $item;
-				break;
+			if ( isset( $item[2] ) && in_array( $item[2], $folder_slugs, true ) ) {
+				$extracted_folders[ $item[2] ] = $item;
+				unset( $menu[ $key ] );
 			}
 		}
 
-		if ( null !== $target_key && null !== $target_item ) {
-			unset( $menu[ $target_key ] );
-			// 既存のキーの最大値よりも大きい位置キーを付与して末尾に配置
-			$keys = array_filter( array_keys( $menu ), 'is_numeric' );
-			$max_key = ! empty( $keys ) ? max( $keys ) : 100;
-			$new_key = max( $max_key + 100, 99999 );
-			$menu[ (string) $new_key ] = $target_item;
+		if ( empty( $extracted_folders ) ) {
+			return;
+		}
+
+		// 2. 既存の数値キーの最大値を取得し、基準位置を算出（最小 99900）
+		$numeric_keys = array_filter( array_keys( $menu ), 'is_numeric' );
+		$max_existing = ! empty( $numeric_keys ) ? (int) max( $numeric_keys ) : 999;
+		$base_pos     = max( 99900, $max_existing + 10 );
+
+		// 3. ユーザーの並び順通りに、隙間のない連続キー（+0, +1, +2...）で末尾に隙間なく並べて配置
+		foreach ( $folder_slugs as $idx => $slug ) {
+			if ( isset( $extracted_folders[ $slug ] ) ) {
+				$new_key          = (string) ( $base_pos + $idx );
+				$menu[ $new_key ] = $extracted_folders[ $slug ];
+			}
 		}
 	}
 
