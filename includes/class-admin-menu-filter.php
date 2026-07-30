@@ -94,6 +94,7 @@ class Menu_Filter {
 		}
 
 		// 各フォルダーごとに処理
+		$valid_folders = array();
 		foreach ( $sub_menues as $folder_idx => $folder ) {
 			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
 			$parent_slug  = ( 0 === $folder_idx || 'folder_default' === $folder_id ) ? 'ku-submenu' : 'ku-submenu-' . $folder_id;
@@ -130,39 +131,55 @@ class Menu_Filter {
 			}
 			$submenu[ $parent_slug ] = array();
 
-			if ( empty( $folder_items ) ) {
+			$valid_item_count = 0;
+
+			if ( ! empty( $folder_items ) ) {
+				foreach ( $folder_items as $config_item ) {
+					$slug = $config_item['menu_slug'];
+
+					if ( ! isset( $items_to_move[ $slug ] ) ) {
+						continue;
+					}
+
+					$item_info = $items_to_move[ $slug ];
+					$menu_data = $item_info['menu_data'];
+					$is_active = $item_info['is_active'];
+
+					$title      = $menu_data[0];
+					$capability = $menu_data[1];
+					$url        = $menu_data[2];
+
+					$submenu[ $parent_slug ][] = array(
+						$title,
+						$capability,
+						$url,
+						$title,
+					);
+					$valid_item_count++;
+
+					// 非アクティブの場合のみ元のルートメニューから削除（非表示化）
+					if ( ! $is_active && isset( $menu[ $item_info['menu_index'] ] ) ) {
+						unset( $menu[ $item_info['menu_index'] ] );
+					}
+				}
+			}
+
+			// 有効なオリジナル格納アイテムが 0件 の場合、空フォルダーとして消去処理
+			if ( 0 === $valid_item_count ) {
+				// サブメニュー構造を破棄
+				unset( $submenu[ $parent_slug ] );
+
+				// ルートメニュー ($menu) からフォルダーのノードを破棄
+				foreach ( $menu as $k => $m_item ) {
+					if ( isset( $m_item[2] ) && $m_item[2] === $parent_slug ) {
+						unset( $menu[ $k ] );
+						break;
+					}
+				}
 				continue;
 			}
 
-			foreach ( $folder_items as $config_item ) {
-				$slug = $config_item['menu_slug'];
-
-				if ( ! isset( $items_to_move[ $slug ] ) ) {
-					continue;
-				}
-
-				$item_info = $items_to_move[ $slug ];
-				$menu_data = $item_info['menu_data'];
-				$is_active = $item_info['is_active'];
-
-				$title      = $menu_data[0];
-				$capability = $menu_data[1];
-				$url        = $menu_data[2];
-
-				$submenu[ $parent_slug ][] = array(
-					$title,
-					$capability,
-					$url,
-					$title,
-				);
-
-				// 非アクティブの場合のみ元のルートメニューから削除（非表示化）
-				if ( ! $is_active && isset( $menu[ $item_info['menu_index'] ] ) ) {
-					unset( $menu[ $item_info['menu_index'] ] );
-				}
-			}
-
-			// 設定項目の自動追加ロジック (none / first / last)
+			// 設定項目の自動追加ロジック (none / first / last) - 有効アイテムが1件以上ある場合のみ追加
 			$setting_link_pos = $options['setting_link_position'] ?? 'none';
 			if ( 'first' === $setting_link_pos ) {
 				array_unshift(
@@ -183,11 +200,11 @@ class Menu_Filter {
 				);
 			}
 
-			// 各フォルダーの個別処理完了
+			$valid_folders[] = $folder;
 		}
 
 		// 全フォルダーをユーザーの設定順に従い、隙間のない連続キーで $menu の最末尾へ一括再配置
-		$this->reposition_all_folders_to_bottom( $sub_menues );
+		$this->reposition_all_folders_to_bottom( $valid_folders );
 	}
 
 	/**
