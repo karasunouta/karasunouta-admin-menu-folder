@@ -13,13 +13,13 @@ Organize and clean up your WordPress admin sidebar menu items into custom folder
 
 == Description ==
 
-KU Submenu Folder is a simple and lightweight plugin that allows you to aggregate multiple WordPress admin sidebar menu items into a clean, dedicated submenu folder. 
+KU Submenu Folder is a simple and lightweight plugin that aggregates multiple WordPress admin sidebar menu items into a clean, dedicated submenu folder. 
 
-As you install more plugins, your WordPress admin menu bar can easily get cluttered. KU Submenu Folder helps you clean up your sidebar menu by grouping infrequently used menu items into a single folder.
+As you install more plugins, your admin sidebar easily becomes cluttered with items you rarely touch. KU Submenu Folder lets you tuck away infrequently used menus into a single organized folder. This allows you to build a streamlined sidebar focused exclusively on your daily essential menus, while maintaining immediate access to all other tools whenever you need them.
 
 = Key Features =
 
-* **Sidebar Menu Cleanup**: Easily organize and move top-level admin menu items into a single folder.
+* **Streamlined Sidebar**: Keep your sidebar focused on daily high-frequency menus while preserving immediate access to secondary items inside the folder.
 * **Easy Toggle Interface**: Drag-free intuitive checkbox interface for managing menu items in the settings page.
 * **Admin Bar Shortcut**: Option to display a direct link to the settings page in the top admin bar.
 * **Submenu Settings Link**: Option to place a settings link at the top or bottom of the submenu folder.
