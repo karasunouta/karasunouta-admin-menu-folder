@@ -4,7 +4,7 @@ Donate link: https://karasunouta.com
 Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.0.13
+Stable tag: 1.1.0
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -45,5 +45,8 @@ No. KU Submenu Folder only changes the location where menu links are rendered in
 
 == Changelog ==
 
-= 1.0.13 =
-* Initial release on WordPress.org.
+= 1.1.0 =
+* Introduce @wordpress/scripts asset minification and build pipeline.
+
+= 1.0.0 =
+* Initial commit.

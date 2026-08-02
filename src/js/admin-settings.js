@@ -1,3 +1,5 @@
+import '../css/admin-settings.css';
+
 /**
  * KU Submenu Folder - Admin Settings & Menu Link Helper (Vanilla JS)
  */
@@ -355,5 +357,3 @@ document.addEventListener('DOMContentLoaded', function () {
 	// 初期状態同期
 	syncState();
 });
-
-

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       KU Submenu Folder
  * Description:       Organizes and stores various WP side menu items into folder structures (submenus).
- * Version:           1.0.14
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            karasunouta
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // プラグイン定数
-define( 'KUSF_VERSION', '1.0.14' );
+define( 'KUSF_VERSION', '1.1.0' );
 define( 'KUSF_PLUGIN_FILE', __FILE__ );
 define( 'KUSF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KUSF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

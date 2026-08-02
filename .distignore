@@ -9,6 +9,8 @@
 node_modules
 package.json
 package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
 src
 scripts
 webpack.config.js

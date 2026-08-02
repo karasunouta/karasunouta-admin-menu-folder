@@ -224,12 +224,22 @@ class Settings_Page {
 	 * @param string $hook_suffix 現在の管理画面フック名.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
+		$asset_file = KUSF_PLUGIN_DIR . 'build/admin-settings.asset.php';
+		if ( file_exists( $asset_file ) ) {
+			$asset_info = require $asset_file;
+			$deps       = $asset_info['dependencies'] ?? array();
+			$version    = $asset_info['version'] ?? KUSF_VERSION;
+		} else {
+			$deps    = array();
+			$version = KUSF_VERSION;
+		}
+
 		// JSは全管理画面でEnqueue（親リンク href の書き換え・クリック補正のため）
 		wp_enqueue_script(
 			'kusf-admin-settings-js',
-			KUSF_PLUGIN_URL . 'assets/js/admin-settings.js',
-			array(),
-			KUSF_VERSION,
+			KUSF_PLUGIN_URL . 'build/admin-settings.js',
+			$deps,
+			$version,
 			true
 		);
 
@@ -237,27 +247,27 @@ class Settings_Page {
 			'kusf-admin-settings-js',
 			'kusfParams',
 			array(
-				'isPro'          => $this->main->is_pro(),
-				'maxFolders'     => $this->main->get_max_folders(),
-				'maxItems'       => $this->main->get_max_items(),
-				'nonce'          => wp_create_nonce( 'kusf_save_settings_nonce' ),
-				'settingsUrl'    => admin_url( 'options-general.php?page=ku-submenu-folder' ),
-				'protectedSlugs' => $this->main->get_protected_slugs(),
-				'moveUp'         => __( 'Move Up', 'ku-submenu-folder' ),
-				'moveDown'       => __( 'Move Down', 'ku-submenu-folder' ),
-				'moveLeft'       => __( 'Move Left', 'ku-submenu-folder' ),
-				'moveRight'      => __( 'Move Right', 'ku-submenu-folder' ),
-				'editFolder'     => __( 'Edit Folder', 'ku-submenu-folder' ),
-				'deleteFolder'   => __( 'Delete Folder', 'ku-submenu-folder' ),
-				'removeItem'     => __( 'Remove Item', 'ku-submenu-folder' ),
-				'confirmDelete'  => __( 'Are you sure you want to delete this folder? Stored menu items will be restored.', 'ku-submenu-folder' ),
-				'limitMessage'   => sprintf(
+				'isPro'           => $this->main->is_pro(),
+				'maxFolders'      => $this->main->get_max_folders(),
+				'maxItems'        => $this->main->get_max_items(),
+				'nonce'           => wp_create_nonce( 'kusf_save_settings_nonce' ),
+				'settingsUrl'     => admin_url( 'options-general.php?page=ku-submenu-folder' ),
+				'protectedSlugs'  => $this->main->get_protected_slugs(),
+				'moveUp'          => __( 'Move Up', 'ku-submenu-folder' ),
+				'moveDown'        => __( 'Move Down', 'ku-submenu-folder' ),
+				'moveLeft'        => __( 'Move Left', 'ku-submenu-folder' ),
+				'moveRight'       => __( 'Move Right', 'ku-submenu-folder' ),
+				'editFolder'      => __( 'Edit Folder', 'ku-submenu-folder' ),
+				'deleteFolder'    => __( 'Delete Folder', 'ku-submenu-folder' ),
+				'removeItem'      => __( 'Remove Item', 'ku-submenu-folder' ),
+				'confirmDelete'   => __( 'Are you sure you want to delete this folder? Stored menu items will be restored.', 'ku-submenu-folder' ),
+				'limitMessage'    => sprintf(
 					/* translators: %d: Maximum allowed items */
 					__( 'You can store up to %d menu items per folder.', 'ku-submenu-folder' ),
 					$this->main->get_max_items()
 				),
 				'noItemsSelected' => __( 'No menu items selected', 'ku-submenu-folder' ),
-				'folderLimitMsg' => sprintf(
+				'folderLimitMsg'  => sprintf(
 					/* translators: %d: Maximum allowed folders */
 					__( 'You can create up to %d submenu folders in Pro version.', 'ku-submenu-folder' ),
 					$this->main->get_max_folders()
@@ -269,9 +279,9 @@ class Settings_Page {
 		if ( strpos( $hook_suffix, 'ku-submenu-folder' ) !== false ) {
 			wp_enqueue_style(
 				'kusf-admin-settings-css',
-				KUSF_PLUGIN_URL . 'assets/css/admin-settings.css',
+				KUSF_PLUGIN_URL . 'build/admin-settings.css',
 				array(),
-				KUSF_VERSION
+				$version
 			);
 		}
 	}
