@@ -6,8 +6,7 @@
 		"ku-submenu-folder.php",
 		"readme.txt",
 		"build",
-		"includes",
-		"languages"
+		"includes"
 	],
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
