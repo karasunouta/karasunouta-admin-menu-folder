@@ -39,6 +39,11 @@ The standard version supports grouping menu items into 1 main submenu folder. Fo
 = Will moving menu items change their functionality or permissions? =
 No. KU Submenu Folder only changes the location where menu links are rendered in the admin sidebar. User capabilities and plugin page URLs remain unchanged.
 
+= How do I access child menu items of a menu item placed inside a folder? =
+Click on the menu item inside the folder (e.g., Submenu Folder > Target Menu). This opens the parent page and expands its submenu structure in the sidebar, allowing you to access all of its child items.
+
+Why this design? WordPress admin menus natively support only up to 2 levels of hierarchy. Forcibly hacking or overriding core menu scripts to create deep nested dropdowns risks breaking layout compatibility and causing conflicts with other plugins or future WordPress updates. Our clean, core-compliant approach provides a safe, reliable, and practical 3-tier menu experience without stability risks.
+
 == Screenshots ==
 
 1. Settings page preview showing sidebar menu selection and folder preview.
