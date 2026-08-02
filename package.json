@@ -4,6 +4,7 @@
 	"description": "Organizes and stores various WP side menu items into folder structures.",
 	"files": [
 		"ku-submenu-folder.php",
+		"uninstall.php",
 		"readme.txt",
 		"build",
 		"includes"

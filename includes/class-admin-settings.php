@@ -363,7 +363,7 @@ class Settings_Page {
 										data-icon-class="<?php echo esc_attr( $icon_class ); ?>"
 									>
 										<div class="kusf-menu-label">
-											<span class="kusf-menu-icon"><?php echo wp_kses_post( $icon_html ); ?></span>
+											<span class="kusf-menu-icon"><?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 											<span class="kusf-menu-title"><?php echo wp_kses_post( $title ); ?></span>
 										</div>
 										<div class="kusf-menu-checkbox">
@@ -502,7 +502,16 @@ class Settings_Page {
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
 
-		// 1. 現在の $menu から項目を取得
+		// 1. 現在除外されている選択済みスラグと position のマップを作成
+		$selected_slugs_map = array();
+		foreach ( $selected_menues as $sel ) {
+			if ( ! empty( $sel['menu_slug'] ) ) {
+				$pos = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
+				$selected_slugs_map[ $sel['menu_slug'] ] = $pos;
+			}
+		}
+
+		// 2. 現在の $menu から未選択項目を取得し、unset による前詰まりオフセットを自動計算・加算補正
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -517,11 +526,22 @@ class Settings_Page {
 				$url = 'admin.php?page=' . $slug;
 			}
 
-			$items_by_position[ (string) $pos ] = array(
+			$calc_pos = (float) $pos;
+
+			// この未選択項目より前の位置に存在した選択済み(unset済み)項目の件数を連動オフセットとして補正
+			$offset = 0;
+			foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
+				if ( $sel_pos <= ( $calc_pos + $offset ) ) {
+					$offset++;
+				}
+			}
+			$calc_pos += $offset;
+
+			$items_by_position[] = array(
 				'slug'       => $slug,
 				'title'      => $clean_title,
 				'url'        => $url,
-				'position'   => (float) $pos,
+				'position'   => $calc_pos,
 				'icon_class' => $icon_class,
 				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
@@ -529,23 +549,19 @@ class Settings_Page {
 			$existing_slugs[] = $slug;
 		}
 
-		// 2. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を「元の位置」「元のアイコン」で復元マージ
+		// 3. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を「元の位置」「元のアイコン」で復元マージ
 		foreach ( $selected_menues as $sel ) {
 			$sel_slug = $sel['menu_slug'] ?? '';
 			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $existing_slugs, true ) ) {
 				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
 				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
 
-				while ( isset( $items_by_position[ (string) $pos ] ) ) {
-					$pos += 0.001;
-				}
-
 				$url = $sel['data']['url'] ?? $sel_slug;
 				if ( ! str_contains( $url, '.php' ) && ! str_contains( $url, 'http' ) ) {
 					$url = 'admin.php?page=' . $url;
 				}
 
-				$items_by_position[ (string) $pos ] = array(
+				$items_by_position[] = array(
 					'slug'       => $sel_slug,
 					'title'      => $sel['title'] ?? $sel_slug,
 					'url'        => $url,
@@ -561,8 +577,8 @@ class Settings_Page {
 		// 3. サブメニューフォルダー自体を擬似サイドメニュー項目として順序通りに復元マージ（Pro版有効時は全フォルダー対象）
 		$default_folders_to_merge = ! empty( $sub_menues[0] ) ? array( $sub_menues[0] ) : array();
 		$folders_to_merge         = apply_filters( 'kusf_get_clean_root_menues_folders', $default_folders_to_merge, $sub_menues );
-		$numeric_keys             = array_filter( array_keys( $items_by_position ), 'is_numeric' );
-		$max_existing             = ! empty( $numeric_keys ) ? (float) max( $numeric_keys ) : 999.0;
+		$positions_list           = array_column( $items_by_position, 'position' );
+		$max_existing             = ! empty( $positions_list ) ? (float) max( $positions_list ) : 999.0;
 		$base_pos                 = (float) max( 999000.0, ceil( $max_existing ) + 100.0 );
 
 		foreach ( $folders_to_merge as $idx => $folder ) {
@@ -575,34 +591,37 @@ class Settings_Page {
 			$f_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$f_pos   = $base_pos + (float) $idx;
 
-			if ( ! in_array( $f_slug, $existing_slugs, true ) && ! in_array( $f_id, $existing_slugs, true ) ) {
-				while ( isset( $items_by_position[ (string) $f_pos ] ) ) {
-					$f_pos += 0.001;
+			// 既存のリストから途中に挟まっているフォルダー項目を除去
+			foreach ( $items_by_position as $k => $v ) {
+				if ( isset( $v['slug'] ) && ( $v['slug'] === $f_slug || $v['slug'] === $f_id ) ) {
+					unset( $items_by_position[ $k ] );
 				}
-
-				$items_by_position[ (string) $f_pos ] = array(
-					'slug'       => $f_slug,
-					'title'      => $f_title,
-					'url'        => 'admin.php?page=' . $f_slug,
-					'position'   => $f_pos,
-					'icon_class' => $f_icon,
-					'icon_html'  => $this->build_icon_html( $f_icon ),
-					'is_folder'  => true,
-				);
-
-				$existing_slugs[] = $f_slug;
 			}
+
+			$items_by_position[] = array(
+				'slug'       => $f_slug,
+				'title'      => $f_title,
+				'url'        => 'admin.php?page=' . $f_slug,
+				'position'   => $f_pos,
+				'icon_class' => $f_icon,
+				'icon_html'  => $this->build_icon_html( $f_icon ),
+				'is_folder'  => true,
+			);
+
+			$existing_slugs[] = $f_slug;
 		}
 
-		// 4. 元の位置 (position) の昇順でソート
-		uksort(
+		// 4. 元の位置 (position) の数値による厳密な昇順ソート (配列キーの型キャスト揺れ防止)
+		usort(
 			$items_by_position,
 			function ( $a, $b ) {
-				return (float) $a <=> (float) $b;
+				$pos_a = (float) ( $a['position'] ?? 999.0 );
+				$pos_b = (float) ( $b['position'] ?? 999.0 );
+				return $pos_a <=> $pos_b;
 			}
 		);
 
-		return array_values( $items_by_position );
+		return $items_by_position;
 	}
 
 	/**

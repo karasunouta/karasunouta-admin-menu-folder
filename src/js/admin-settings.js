@@ -45,9 +45,36 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * 隠しフィールド (JSON) とUI状態の同期
 	 */
 	function syncState() {
+		const firstCard = foldersGrid.querySelector('.kusf-folder-card');
+		if (firstCard) {
+			const sublist = firstCard.querySelector('.kusf-folder-sublist');
+			updateEmptyNotice(sublist);
+		}
 		updateButtonStates();
 		updateHiddenFieldValue();
 		syncPseudoMenuCheckboxes();
+	}
+
+	/**
+	 * 空フォルダー通知メッセージの自動削除・再挿入制御
+	 */
+	function updateEmptyNotice(sublist) {
+		if (!sublist) return;
+		const rows = sublist.querySelectorAll('.kusf-subitem-row');
+		const emptyNotice = sublist.querySelector('.kusf-empty-notice');
+
+		if (rows.length > 0) {
+			if (emptyNotice) {
+				emptyNotice.remove();
+			}
+		} else {
+			if (!emptyNotice) {
+				const emptyLi = document.createElement('li');
+				emptyLi.className = 'kusf-empty-notice';
+				emptyLi.textContent = (typeof kusfParams !== 'undefined' && kusfParams.noItemsSelected) ? kusfParams.noItemsSelected : 'No menu items selected';
+				sublist.appendChild(emptyLi);
+			}
+		}
 	}
 
 	/**
