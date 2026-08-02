@@ -10,9 +10,28 @@
 		"languages"
 	],
 	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "wp-scripts build src/js/admin-settings.js",
-		"start": "wp-scripts start src/js/admin-settings.js"
+		"start": "wp-scripts start src/js/admin-settings.js",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"make-json": "wp i18n make-json languages/ --no-purge && bash scripts/make-json-rename.sh ku-submenu-folder",
+		"make-pot": "wp i18n make-pot . languages/ku-submenu-folder.pot --exclude=\"src\"",
+		"compile-mo": "python scripts/po2mo.py",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"plugin-export": "pnpm run build && pnpm run plugin-zip",
+		"test:i18n": "python scripts/check_translation.py"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/karasunouta/ku-submenu-folder.git"
+	},
+	"bugs": {
+		"url": "https://github.com/karasunouta/ku-submenu-folder/issues"
+	},
+	"homepage": "https://github.com/karasunouta/ku-submenu-folder#readme",
 	"author": "karasunouta",
 	"license": "GPL-2.0-or-later",
 	"devDependencies": {

@@ -50,3 +50,8 @@ No. KU Submenu Folder only changes the location where menu links are rendered in
 
 = 1.0.0 =
 * Initial commit.
+
+== Source Code & Development ==
+
+The source code for this plugin is available on GitHub:
+https://github.com/karasunouta/ku-submenu-folder
