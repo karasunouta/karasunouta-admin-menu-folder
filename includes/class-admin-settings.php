@@ -353,7 +353,7 @@ class Settings_Page {
 										data-icon-class="<?php echo esc_attr( $icon_class ); ?>"
 									>
 										<div class="kusf-menu-label">
-											<span class="kusf-menu-icon"><?php echo $icon_html; ?></span>
+											<span class="kusf-menu-icon"><?php echo wp_kses_post( $icon_html ); ?></span>
 											<span class="kusf-menu-title"><?php echo wp_kses_post( $title ); ?></span>
 										</div>
 										<div class="kusf-menu-checkbox">

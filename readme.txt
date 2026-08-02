@@ -1,9 +1,9 @@
 === KU Submenu Folder ===
 Contributors: karasunouta
 Donate link: https://karasunouta.com
-Tags: submenu, folder, menu, admin menu, organize, dashboard
+Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
 Requires at least: 6.4
-Tested up to: 6.7
+Tested up to: 7.0
 Stable tag: 1.0.13
 Requires PHP: 8.0
 License: GPLv2 or later

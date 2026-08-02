@@ -52,7 +52,8 @@ class Menu_Filter {
 		}
 
 		// 現在アクティブな画面・親ファイルを特定
-		$current_slug = $plugin_page ?? ( $_GET['page'] ?? $pagenow ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$get_page     = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_slug = $plugin_page ?? ( $get_page ?? $pagenow );
 
 		// 全フォルダーの格納対象メニューと全ターゲットスラグを収集
 		$all_target_slugs = array();
