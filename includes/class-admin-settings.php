@@ -375,15 +375,16 @@ class Settings_Page {
 							<ul class="kusf-pseudo-menu-list">
 								<?php foreach ( $available_menues as $item ) : ?>
 									<?php
-									$slug        = $item['slug'];
-									$title       = $item['title'];
-									$icon_html   = $item['icon_html'];
-									$icon_class  = $item['icon_class'];
-									$position    = $item['position'];
-									$is_checked  = in_array( $slug, $selected_slugs, true );
-									$is_disabled = in_array( $slug, $protected_slugs, true ) || ! empty( $item['is_folder'] ) || str_starts_with( $slug, 'ku-submenu' );
+									$slug                  = $item['slug'];
+									$title                 = $item['title'];
+									$icon_html             = $item['icon_html'];
+									$icon_class            = $item['icon_class'];
+									$position              = $item['position'];
+									$is_checked            = in_array( $slug, $selected_slugs, true );
+									$is_disabled           = in_array( $slug, $protected_slugs, true ) || ! empty( $item['is_folder'] ) || str_starts_with( $slug, 'ku-submenu' );
+									$is_active_folder_item = $is_disabled && ( 'ku-submenu' === $slug || 'folder_default' === $slug );
 									?>
-									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?>"
+									<li class="kusf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?> <?php echo $is_active_folder_item ? 'is-selected-folder-active' : ''; ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
 										data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>"
 										data-url="<?php echo esc_attr( $item['url'] ); ?>"
@@ -451,10 +452,10 @@ class Settings_Page {
 														<span><?php echo esc_html( $sub_item['title'] ); ?></span>
 													</div>
 													<div class="kusf-subitem-actions">
-														<button type="button" class="button button-small kusf-move-up" title="<?php esc_attr_e( 'Move Up', 'ku-submenu-folder' ); ?>" <?php echo 0 === $index ? 'disabled' : ''; ?>>
+														<button type="button" class="button button-small kusf-move-up <?php echo ! $is_pro ? 'is-disabled-pro' : ''; ?>" title="<?php echo esc_attr( ! $is_pro ? __( 'Reordering is available in Pro version', 'ku-submenu-folder' ) : __( 'Move Up', 'ku-submenu-folder' ) ); ?>" <?php echo ( ! $is_pro || 0 === $index ) ? 'disabled' : ''; ?>>
 															<span class="dashicons dashicons-arrow-up-alt2"></span>
 														</button>
-														<button type="button" class="button button-small kusf-move-down" title="<?php esc_attr_e( 'Move Down', 'ku-submenu-folder' ); ?>" <?php echo ( count( $f_items ) - 1 === $index ) ? 'disabled' : ''; ?>>
+														<button type="button" class="button button-small kusf-move-down <?php echo ! $is_pro ? 'is-disabled-pro' : ''; ?>" title="<?php echo esc_attr( ! $is_pro ? __( 'Reordering is available in Pro version', 'ku-submenu-folder' ) : __( 'Move Down', 'ku-submenu-folder' ) ); ?>" <?php echo ( ! $is_pro || count( $f_items ) - 1 === $index ) ? 'disabled' : ''; ?>>
 															<span class="dashicons dashicons-arrow-down-alt2"></span>
 														</button>
 														<!-- 通常版・Pro版共通: 格納済みメニュー項目の解約ボタン -->
@@ -466,6 +467,12 @@ class Settings_Page {
 											<?php endforeach; ?>
 										<?php endif; ?>
 									</ul>
+									<?php if ( ! $is_pro ) : ?>
+										<div class="kusf-pro-notice-box">
+											<span class="kusf-pro-badge">PRO</span>
+											<span class="kusf-pro-notice-text"><?php esc_html_e( 'Reordering menu items and creating multiple folders are available in Pro version.', 'ku-submenu-folder' ); ?></span>
+										</div>
+									<?php endif; ?>
 									<div class="kusf-folder-footer-actions">
 										<button type="button" class="button kusf-folder-move-left <?php echo ! $is_pro ? 'is-disabled-pro' : ''; ?>" title="<?php esc_attr_e( 'Move Left', 'ku-submenu-folder' ); ?>" <?php echo ( ! $is_pro || 0 === $f_idx ) ? 'disabled' : ''; ?>>
 											<span class="dashicons dashicons-arrow-left-alt2"></span>
@@ -583,14 +590,14 @@ class Settings_Page {
 		// 3. 全サブメニューフォルダー自体（空フォルダー含む）も擬似サイドメニュー項目として順序通りに復元マージ
 		$numeric_keys = array_filter( array_keys( $items_by_position ), 'is_numeric' );
 		$max_existing = ! empty( $numeric_keys ) ? (float) max( $numeric_keys ) : 999.0;
-		$base_pos     = max( 99900.0, $max_existing + 10.0 );
+		$base_pos     = (float) max( 999000.0, ceil( $max_existing ) + 100.0 );
 
 		foreach ( $sub_menues as $idx => $folder ) {
 			$f_id    = $folder['id'] ?? ( 'folder_' . $idx );
 			$f_slug  = ( 0 === $idx ) ? 'ku-submenu' : ( 'ku-submenu-' . $f_id );
 			$f_title = $folder['title'] ?? 'KU Submenu';
 			$f_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
-			$f_pos   = $base_pos + $idx;
+			$f_pos   = $base_pos + (float) $idx;
 
 			if ( ! in_array( $f_slug, $existing_slugs, true ) && ! in_array( $f_id, $existing_slugs, true ) ) {
 				while ( isset( $items_by_position[ (string) $f_pos ] ) ) {

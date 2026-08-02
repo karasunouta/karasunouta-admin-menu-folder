@@ -107,9 +107,9 @@ class Main {
 		/**
 		 * WP Sub Menuに格納可能な最大メニュー数をフィルタリング
 		 *
-		 * @param int $max_items 通常版デフォルトは5件
+		 * @param int $max_items デフォルトは99件
 		 */
-		$default_max = $this->is_pro() ? 99 : 5;
+		$default_max = 99;
 		return (int) apply_filters( 'ku_submenu_folder_max_items', $default_max );
 	}
 
@@ -129,10 +129,9 @@ class Main {
 				$slug = $folder['slug'] ?? $id;
 
 				if ( ! empty( $slug ) ) {
-					if ( 'folder_default' === $slug || 'folder_default' === $id ) {
-						$protected[] = 'ku-submenu';
-					} else {
-						$protected[] = $slug;
+					$protected[] = $slug;
+					$protected[] = 'ku-submenu-' . $slug;
+					if ( 'folder_default' !== $id ) {
 						$protected[] = 'ku-submenu-' . $id;
 					}
 				}
@@ -174,7 +173,7 @@ class Main {
 			$options['sub_menues'] = $defaults['sub_menues'];
 		}
 
-		// Pro版が無効な場合の自動フォールバックルール（タイトルのKU Submenu復元・アイコン復元・1フォルダー・最大5件マスク）
+		// Pro版が無効な場合の自動フォールバックルール（タイトルのKU Submenu復元・アイコン復元・1フォルダー・最大件数マスク・元位置順への自動仮ソート）
 		if ( ! $this->is_pro() ) {
 			$first_folder = $options['sub_menues'][0] ?? $defaults['sub_menues'][0];
 
@@ -182,9 +181,20 @@ class Main {
 			$first_folder['title'] = 'KU Submenu';
 			$first_folder['icon']  = 'dashicons-category';
 
-			// 最大5件にマスク
 			if ( ! empty( $first_folder['menues'] ) && is_array( $first_folder['menues'] ) ) {
-				$first_folder['menues'] = array_slice( $first_folder['menues'], 0, $this->get_max_items() );
+				$items = array_slice( $first_folder['menues'], 0, $this->get_max_items() );
+
+				// 通常版動作時のみ、DBデータは変更せず動的に original_position (WP元位置) の昇順で仮ソートして表示
+				usort(
+					$items,
+					function ( $a, $b ) {
+						$pos_a = (float) ( $a['data']['original_position'] ?? ( $a['position'] ?? 999.0 ) );
+						$pos_b = (float) ( $b['data']['original_position'] ?? ( $b['position'] ?? 999.0 ) );
+						return $pos_a <=> $pos_b;
+					}
+				);
+
+				$first_folder['menues'] = array_values( $items );
 			} else {
 				$first_folder['menues'] = array();
 			}

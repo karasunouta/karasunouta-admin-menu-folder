@@ -97,22 +97,21 @@ class Menu_Filter {
 		$valid_folders = array();
 		foreach ( $sub_menues as $folder_idx => $folder ) {
 			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
-			$parent_slug  = ( 0 === $folder_idx || 'folder_default' === $folder_id ) ? 'ku-submenu' : 'ku-submenu-' . $folder_id;
+			$parent_slug  = ( 0 === $folder_idx ) ? 'ku-submenu' : 'ku-submenu-' . $folder_id;
 			$folder_title = $folder['title'] ?? 'KU Submenu';
 			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$folder_items = $folder['menues'] ?? array();
 
 			// 第2フォルダー以降で親メニューがまだ未登録の場合、動的に追加登録
-			if ( 0 !== $folder_idx && 'folder_default' !== $folder_id ) {
-				// メニュー登録
+			if ( 0 !== $folder_idx ) {
+				// メニュー登録（位置引数は指定せず、reposition_all_folders_to_bottomで最末尾へ一括配置）
 				add_menu_page(
 					$folder_title,
 					$folder_title,
 					'manage_options',
 					$parent_slug,
 					'__return_null',
-					$folder_icon,
-					9999 + $folder_idx
+					$folder_icon
 				);
 			} else {
 				// デフォルトフォルダーのタイトル・アイコン反映
@@ -221,15 +220,16 @@ class Menu_Filter {
 		// 全フォルダーの親スラグ順序を生成
 		$folder_slugs = array();
 		foreach ( $sub_menues as $f_idx => $folder ) {
-			$f_id          = $folder['id'] ?? ( 'folder_' . $f_idx );
-			$parent_slug   = ( 0 === $f_idx || 'folder_default' === $f_id ) ? 'ku-submenu' : 'ku-submenu-' . $f_id;
+			$f_id           = $folder['id'] ?? ( 'folder_' . $f_idx );
+			$parent_slug    = ( 0 === $f_idx ) ? 'ku-submenu' : 'ku-submenu-' . $f_id;
 			$folder_slugs[] = $parent_slug;
 		}
 
-		// 1. $menu から全フォルダー項目を一旦抽出・保持し、元の位置からは削除
+		// 1. $menu から全フォルダー項目を一旦抽出・保持し、元の位置からは全ノードを確実に削除
 		$extracted_folders = array();
 		foreach ( $menu as $key => $item ) {
 			if ( isset( $item[2] ) && in_array( $item[2], $folder_slugs, true ) ) {
+				// 後勝ちで最新の指定ノードを保持し、重複キーはすべて消去
 				$extracted_folders[ $item[2] ] = $item;
 				unset( $menu[ $key ] );
 			}
@@ -239,12 +239,21 @@ class Menu_Filter {
 			return;
 		}
 
-		// 2. 既存の数値キーの最大値を取得し、基準位置を算出（最小 99900）
-		$numeric_keys = array_filter( array_keys( $menu ), 'is_numeric' );
-		$max_existing = ! empty( $numeric_keys ) ? (int) max( $numeric_keys ) : 999;
-		$base_pos     = max( 99900, $max_existing + 10 );
+		// 2. 既存のキーの最大値を算出（数値型・文字列数値型の両方に対応）
+		$max_existing = 0.0;
+		foreach ( array_keys( $menu ) as $k ) {
+			if ( is_numeric( $k ) ) {
+				$val = (float) $k;
+				if ( $val > $max_existing ) {
+					$max_existing = $val;
+				}
+			}
+		}
 
-		// 3. ユーザーの並び順通りに、隙間のない連続キー（+0, +1, +2...）で末尾に隙間なく並べて配置
+		// 確実に全メニューの最末尾より後ろの位置を算出 (最小 999000)
+		$base_pos = (int) max( 999000, ceil( $max_existing ) + 100 );
+
+		// 3. ユーザーの並び順通りに、隙間のない連続キー（$base_pos + 0, + 1, + 2...）で最末尾へ一括配置
 		foreach ( $folder_slugs as $idx => $slug ) {
 			if ( isset( $extracted_folders[ $slug ] ) ) {
 				$new_key          = (string) ( $base_pos + $idx );

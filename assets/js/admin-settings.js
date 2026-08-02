@@ -49,12 +49,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	/**
-	 * 擬似サイドメニューのチェックボックス状態を現在のフォルダー内格納項目と同期
+	 * 擬似サイドメニューのチェックボックス状態およびアクティブ表示を現在のフォルダーと同期
 	 */
 	function syncPseudoMenuCheckboxes() {
 		const firstCard = foldersGrid.querySelector('.kusf-folder-card');
 		if (!firstCard) return;
 
+		const activeFolderId = firstCard.getAttribute('data-folder-id') || 'folder_default';
 		const allSubitemRows = firstCard.querySelectorAll('.kusf-subitem-row');
 		const storedSlugs = new Set();
 		allSubitemRows.forEach(row => storedSlugs.add(row.getAttribute('data-slug')));
@@ -63,6 +64,14 @@ document.addEventListener('DOMContentLoaded', function () {
 		pseudoItems.forEach(item => {
 			const slug = item.getAttribute('data-slug');
 			const checkbox = item.querySelector('.kusf-item-toggle');
+
+			// アクティブフォルダー項目のハイライト制御 (ku-submenu 等)
+			if (slug === 'ku-submenu' || slug === 'folder_default' || slug === activeFolderId) {
+				item.classList.add('is-selected-folder-active');
+			} else {
+				item.classList.remove('is-selected-folder-active');
+			}
+
 			if (checkbox && !checkbox.disabled) {
 				const isStored = storedSlugs.has(slug);
 				checkbox.checked = isStored;
@@ -73,6 +82,28 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 			}
 		});
+	}
+
+	/**
+	 * 元のWPポジション順 (data-position 昇順) に従って行要素を挿入
+	 */
+	function insertRowSortedByPosition(sublist, newRow) {
+		const newPos = parseFloat(newRow.getAttribute('data-position')) || 999.0;
+		const existingRows = Array.from(sublist.querySelectorAll('.kusf-subitem-row'));
+		let inserted = false;
+
+		for (let i = 0; i < existingRows.length; i++) {
+			const rowPos = parseFloat(existingRows[i].getAttribute('data-position')) || 999.0;
+			if (newPos < rowPos) {
+				sublist.insertBefore(newRow, existingRows[i]);
+				inserted = true;
+				break;
+			}
+		}
+
+		if (!inserted) {
+			sublist.appendChild(newRow);
+		}
 	}
 
 	/**
@@ -125,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * カード内の上下移動ボタン有効/無効を更新
 	 */
 	function updateButtonStates() {
+		if (!isPro) return;
 		const firstCard = foldersGrid.querySelector('.kusf-folder-card');
 		if (!firstCard) return;
 
@@ -172,9 +204,11 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * サブアイテム行DOM要素の生成
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
-		const moveUpText = kusfParams.moveUp || 'Move Up';
-		const moveDownText = kusfParams.moveDown || 'Move Down';
+		const moveUpText = isPro ? (kusfParams.moveUp || 'Move Up') : '並べ替えはPro版限定機能です';
+		const moveDownText = isPro ? (kusfParams.moveDown || 'Move Down') : '並べ替えはPro版限定機能です';
 		const removeText = kusfParams.removeItem || 'Remove Item';
+		const disabledAttr = !isPro ? 'disabled' : '';
+		const proClass = !isPro ? 'is-disabled-pro' : '';
 
 		const li = document.createElement('li');
 		li.className = 'kusf-subitem-row';
@@ -190,10 +224,10 @@ document.addEventListener('DOMContentLoaded', function () {
 				<span>${escapeHtml(title)}</span>
 			</div>
 			<div class="kusf-subitem-actions">
-				<button type="button" class="button button-small kusf-move-up" title="${escapeHtml(moveUpText)}">
+				<button type="button" class="button button-small kusf-move-up ${proClass}" title="${escapeHtml(moveUpText)}" ${disabledAttr}>
 					<span class="dashicons dashicons-arrow-up-alt2"></span>
 				</button>
-				<button type="button" class="button button-small kusf-move-down" title="${escapeHtml(moveDownText)}">
+				<button type="button" class="button button-small kusf-move-down ${proClass}" title="${escapeHtml(moveDownText)}" ${disabledAttr}>
 					<span class="dashicons dashicons-arrow-down-alt2"></span>
 				</button>
 				<button type="button" class="button button-small kusf-item-remove-btn" title="${escapeHtml(removeText)}">
@@ -223,7 +257,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			return;
 		}
 
-		// 2. サブアイテムの上下並び替え
+		// 2. サブアイテムの上下並び替え (Pro版のみ)
+		if (!isPro) return;
+
 		const btnUp = e.target.closest('.kusf-move-up');
 		const btnDown = e.target.closest('.kusf-move-down');
 		if (btnUp && !btnUp.disabled) {
@@ -284,7 +320,11 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 
 			const newRow = createSubitemRow(slug, title, url, position, iconClass);
-			sublist.appendChild(newRow);
+			if (!isPro) {
+				insertRowSortedByPosition(sublist, newRow);
+			} else {
+				sublist.appendChild(newRow);
+			}
 			itemRow.classList.add('is-selected');
 		} else {
 			const existingRows = firstCard.querySelectorAll(`.kusf-subitem-row[data-slug="${slug}"]`);
@@ -293,6 +333,23 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		syncState();
+	});
+
+	// ----------------------------------------------------------------------
+	// イベント処理: 左側擬似メニューの行全体クリックでチェックボックス切替
+	// ----------------------------------------------------------------------
+	pseudoList.addEventListener('click', function (e) {
+		const itemRow = e.target.closest('.kusf-pseudo-menu-item');
+		if (!itemRow || itemRow.classList.contains('is-disabled')) return;
+
+		// チェックボックス自体をクリックした場合は change イベントが自然発火するので二重発火を防止
+		if (e.target.tagName && e.target.tagName.toLowerCase() === 'input') return;
+
+		const checkbox = itemRow.querySelector('.kusf-item-toggle');
+		if (checkbox && !checkbox.disabled) {
+			checkbox.checked = !checkbox.checked;
+			checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+		}
 	});
 
 	// 初期状態同期
