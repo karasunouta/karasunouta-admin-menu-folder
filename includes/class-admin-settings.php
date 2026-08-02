@@ -103,58 +103,19 @@ class Settings_Page {
 			$max_items       = $this->main->get_max_items();
 			$protected_slugs = $this->main->get_protected_slugs();
 
-			if ( $is_pro ) {
-				// Pro版動作時: 受信した全フォルダーデータをサニタイズ保存
-				$sanitized_folders = array();
-				$folder_count      = 0;
+			// フィルターフック経由でサニタイズ（Pro版有効時はPro版側が全フォルダーをサニタイズ処理）
+			$pro_sanitized_folders = apply_filters(
+				'kusf_sanitize_folders_for_save',
+				null,
+				$decoded_folders,
+				$max_folders,
+				$max_items,
+				$protected_slugs
+			);
 
-				foreach ( $decoded_folders as $folder_data ) {
-					if ( $folder_count >= $max_folders ) {
-						break;
-					}
-
-					$folder_id    = sanitize_text_field( $folder_data['id'] ?? ( 'folder_' . uniqid() ) );
-					$folder_title = sanitize_text_field( $folder_data['title'] ?? 'KU Submenu' );
-					$folder_icon  = sanitize_text_field( $folder_data['icon'] ?? 'dashicons-category' );
-					$raw_menues   = isset( $folder_data['menues'] ) && is_array( $folder_data['menues'] ) ? $folder_data['menues'] : array();
-
-					$sanitized_items = array();
-					$item_count      = 0;
-
-					foreach ( $raw_menues as $item ) {
-						if ( $item_count >= $max_items ) {
-							break;
-						}
-						$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
-
-						if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
-							$sanitized_items[] = array(
-								'menu_slug' => $slug,
-								'title'     => sanitize_text_field( $item['title'] ?? '' ),
-								'order'     => (int) ( $item['order'] ?? $item_count ),
-								'data'      => array(
-									'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
-									'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
-									'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
-								),
-							);
-							$item_count++;
-						}
-					}
-
-					$sanitized_folders[] = array(
-						'id'       => $folder_id,
-						'title'    => ! empty( $folder_title ) ? $folder_title : 'KU Submenu',
-						'icon'     => ! empty( $folder_icon ) ? $folder_icon : 'dashicons-category',
-						'position' => 99 + $folder_count,
-						'menues'   => $sanitized_items,
-					);
-
-					$folder_count++;
-				}
-
-				if ( empty( $sanitized_folders ) ) {
-					$sanitized_folders = array(
+			if ( is_array( $pro_sanitized_folders ) ) {
+				if ( empty( $pro_sanitized_folders ) ) {
+					$pro_sanitized_folders = array(
 						array(
 							'id'       => 'folder_default',
 							'title'    => 'KU Submenu',
@@ -172,7 +133,7 @@ class Settings_Page {
 				}
 
 				$options                          = $this->main->get_raw_options();
-				$options['sub_menues']            = $sanitized_folders;
+				$options['sub_menues']            = $pro_sanitized_folders;
 				$options['show_admin_bar_link']   = (bool) $show_admin_bar_link;
 				$options['setting_link_position'] = $setting_link_pos;
 				$this->main->save_options( $options );
@@ -587,12 +548,17 @@ class Settings_Page {
 			}
 		}
 
-		// 3. 全サブメニューフォルダー自体（空フォルダー含む）も擬似サイドメニュー項目として順序通りに復元マージ
-		$numeric_keys = array_filter( array_keys( $items_by_position ), 'is_numeric' );
-		$max_existing = ! empty( $numeric_keys ) ? (float) max( $numeric_keys ) : 999.0;
-		$base_pos     = (float) max( 999000.0, ceil( $max_existing ) + 100.0 );
+		// 3. サブメニューフォルダー自体を擬似サイドメニュー項目として順序通りに復元マージ（Pro版有効時は全フォルダー対象）
+		$default_folders_to_merge = ! empty( $sub_menues[0] ) ? array( $sub_menues[0] ) : array();
+		$folders_to_merge         = apply_filters( 'kusf_get_clean_root_menues_folders', $default_folders_to_merge, $sub_menues );
+		$numeric_keys             = array_filter( array_keys( $items_by_position ), 'is_numeric' );
+		$max_existing             = ! empty( $numeric_keys ) ? (float) max( $numeric_keys ) : 999.0;
+		$base_pos                 = (float) max( 999000.0, ceil( $max_existing ) + 100.0 );
 
-		foreach ( $sub_menues as $idx => $folder ) {
+		foreach ( $folders_to_merge as $idx => $folder ) {
+			if ( empty( $folder ) ) {
+				continue;
+			}
 			$f_id    = $folder['id'] ?? ( 'folder_' . $idx );
 			$f_slug  = ( 0 === $idx ) ? 'ku-submenu' : ( 'ku-submenu-' . $f_id );
 			$f_title = $folder['title'] ?? 'KU Submenu';
@@ -640,7 +606,11 @@ class Settings_Page {
 			return sprintf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
 		}
 
-		if ( str_contains( $icon_class, 'data:image' ) || str_contains( $icon_class, 'http' ) ) {
+		if ( str_starts_with( $icon_class, 'data:image/' ) ) {
+			return sprintf( '<img src="%s" alt="" class="kusf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />', esc_attr( $icon_class ) );
+		}
+
+		if ( str_contains( $icon_class, 'http://' ) || str_contains( $icon_class, 'https://' ) ) {
 			return sprintf( '<img src="%s" alt="" class="kusf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />', esc_url( $icon_class ) );
 		}
 

@@ -102,17 +102,9 @@ class Menu_Filter {
 			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$folder_items = $folder['menues'] ?? array();
 
-			// 第2フォルダー以降で親メニューがまだ未登録の場合、動的に追加登録
+			// 第2フォルダー以降で親メニューがまだ未登録の場合、Pro版側のアクションフック経由で動的に追加登録
 			if ( 0 !== $folder_idx ) {
-				// メニュー登録（位置引数は指定せず、reposition_all_folders_to_bottomで最末尾へ一括配置）
-				add_menu_page(
-					$folder_title,
-					$folder_title,
-					'manage_options',
-					$parent_slug,
-					'__return_null',
-					$folder_icon
-				);
+				do_action( 'kusf_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
 				// デフォルトフォルダーのタイトル・アイコン反映
 				foreach ( $menu as $k => $m_item ) {
