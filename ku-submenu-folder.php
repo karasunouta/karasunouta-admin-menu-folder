@@ -8,7 +8,6 @@
  * Author:            karasunouta
  * Author URI:        https://karasunouta.com
  * Text Domain:       ku-submenu-folder
- * Domain Path:       /languages
  *
  * @package KuSubmenuFolder
  *
