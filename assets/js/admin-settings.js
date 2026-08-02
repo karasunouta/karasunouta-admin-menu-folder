@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	const isPro = typeof kusfParams !== 'undefined' ? Boolean(kusfParams.isPro) : false;
 	const maxItems = typeof kusfParams !== 'undefined' ? parseInt(kusfParams.maxItems, 10) : 5;
-	const limitMessage = typeof kusfParams !== 'undefined' ? kusfParams.limitMessage : '最大件数に達しました。';
+	const limitMessage = typeof kusfParams !== 'undefined' ? kusfParams.limitMessage : 'Maximum items limit reached.';
 	const protectedSlugs = (typeof kusfParams !== 'undefined' && Array.isArray(kusfParams.protectedSlugs)) ? kusfParams.protectedSlugs : ['ku-submenu', 'ku-submenu-folder'];
 
 	// Pro版が有効な場合は Pro版の JS (pro-admin-settings.js) が上位互換として制御を担当するためここで早期リターン
@@ -204,8 +204,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * サブアイテム行DOM要素の生成
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
-		const moveUpText = isPro ? (kusfParams.moveUp || 'Move Up') : '並べ替えはPro版限定機能です';
-		const moveDownText = isPro ? (kusfParams.moveDown || 'Move Down') : '並べ替えはPro版限定機能です';
+		const moveUpText = isPro ? (kusfParams.moveUp || 'Move Up') : 'Reordering is available in Pro version';
+		const moveDownText = isPro ? (kusfParams.moveDown || 'Move Down') : 'Reordering is available in Pro version';
 		const removeText = kusfParams.removeItem || 'Remove Item';
 		const disabledAttr = !isPro ? 'disabled' : '';
 		const proClass = !isPro ? 'is-disabled-pro' : '';

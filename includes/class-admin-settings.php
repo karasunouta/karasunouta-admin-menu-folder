@@ -449,7 +449,7 @@ class Settings_Page {
 						<div class="kusf-setting-options-card">
 							<div class="kusf-setting-option-row">
 								<label for="kusf_show_admin_bar_link" class="kusf-setting-option-label">
-									<?php esc_html_e( '管理バーに設定ページへのリンクを表示:', 'ku-submenu-folder' ); ?>
+									<?php esc_html_e( 'Show link to settings page in Toolbar:', 'ku-submenu-folder' ); ?>
 								</label>
 								<?php $show_admin_bar_link = ! empty( $options['show_admin_bar_link'] ); ?>
 								<input type="checkbox" name="kusf_show_admin_bar_link" id="kusf_show_admin_bar_link" value="1" <?php checked( $show_admin_bar_link ); ?>>
@@ -457,13 +457,13 @@ class Settings_Page {
 
 							<div class="kusf-setting-option-row">
 								<label for="kusf_setting_link_position" class="kusf-setting-option-label">
-									<?php esc_html_e( '設定メニューをメニューフォルダーに追加:', 'ku-submenu-folder' ); ?>
+									<?php esc_html_e( 'Add settings menu to submenu folder:', 'ku-submenu-folder' ); ?>
 								</label>
 								<?php $setting_link_pos = $options['setting_link_position'] ?? 'none'; ?>
 								<select name="kusf_setting_link_position" id="kusf_setting_link_position" class="kusf-setting-option-select">
-									<option value="none" <?php selected( $setting_link_pos, 'none' ); ?>><?php esc_html_e( '追加しない', 'ku-submenu-folder' ); ?></option>
-									<option value="first" <?php selected( $setting_link_pos, 'first' ); ?>><?php esc_html_e( '先頭に追加', 'ku-submenu-folder' ); ?></option>
-									<option value="last" <?php selected( $setting_link_pos, 'last' ); ?>><?php esc_html_e( '末尾に追加', 'ku-submenu-folder' ); ?></option>
+									<option value="none" <?php selected( $setting_link_pos, 'none' ); ?>><?php esc_html_e( 'Do not add', 'ku-submenu-folder' ); ?></option>
+									<option value="first" <?php selected( $setting_link_pos, 'first' ); ?>><?php esc_html_e( 'Add to top', 'ku-submenu-folder' ); ?></option>
+									<option value="last" <?php selected( $setting_link_pos, 'last' ); ?>><?php esc_html_e( 'Add to bottom', 'ku-submenu-folder' ); ?></option>
 								</select>
 							</div>
 						</div>
