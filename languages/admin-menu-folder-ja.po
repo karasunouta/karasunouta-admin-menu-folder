@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Admin Menu Folder 1.1.0\n"
+"Project-Id-Version: Admin Menu Folder 1.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/admin-menu-folder\n"
 "Last-Translator: karasunouta <info@karasunouta.com>\n"
 "Language-Team: Japanese <ja@li.org>\n"
@@ -10,158 +10,144 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-02T09:46:58+02:00\n"
-"PO-Revision-Date: 2026-08-02 16:52+0900\n"
+"POT-Creation-Date: 2026-08-14T20:26:00+09:00\n"
+"PO-Revision-Date: 2026-08-14 20:26+0900\n"
 "X-Generator: Antigravity AI\n"
 "X-Domain: admin-menu-folder\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. Plugin Name of the plugin
 #: admin-menu-folder.php
-#: includes/class-admin-settings.php:63
-#: includes/class-admin-settings.php:64
-#: includes/class-ku-submenu-folder.php:266
+#: includes/class-main.php:251
+#: includes/class-admin-settings.php:45
+#: includes/class-admin-settings.php:46
 msgid "Admin Menu Folder"
 msgstr "Admin Menu Folder"
 
 #. Description of the plugin
 #: admin-menu-folder.php
-msgid "Organizes and stores various WP side menu items into folder structures (submenus)."
-msgstr "WP サイドメニューの各種メニューをフォルダー構造 (Sub Menu) 内に整理・収納するプラグイン。"
-
+msgid "Organizes and stores various WP side menu items into folder structures."
+msgstr "WP サイドメニューの各種メニューをフォルダー構造内に整理・収納するプラグイン。"
 
 #. Author of the plugin
-#: admin-menu-folder.php:34
-#: includes/class-main.php:34
+#: admin-menu-folder.php
 msgid "karasunouta"
 msgstr "karasunouta"
 
 #. Author URI of the plugin
-#: ku-submenu-folder.php
+#: admin-menu-folder.php
 msgid "https://karasunouta.com"
 msgstr "https://karasunouta.com"
 
-#: includes/class-admin-menu-filter.php:179
-#: includes/class-admin-menu-filter.php:182
-#: includes/class-admin-menu-filter.php:187
-#: includes/class-admin-menu-filter.php:190
+#: includes/class-admin-menu-filter.php:180
+#: includes/class-admin-menu-filter.php:183
+#: includes/class-admin-menu-filter.php:188
+#: includes/class-admin-menu-filter.php:191
 msgid "Menu Folder Settings"
 msgstr "Menu Folder 設定"
 
-#: includes/class-admin-settings.php:50
-msgid "Add Menu Folder"
-msgstr "Menu Folder を追加"
+#: includes/class-admin-settings.php:54
+#: includes/class-admin-settings.php:55
+msgid "Menu Folder"
+msgstr "Menu Folder"
 
-#: includes/class-admin-settings.php:72
-#: includes/class-admin-settings.php:73
-msgid "KU Submenu"
-msgstr "KU Submenu"
-
-#: includes/class-admin-settings.php:92
+#: includes/class-admin-settings.php:74
 msgid "You do not have sufficient permissions to perform this action."
 msgstr "この操作を行う権限がありません。"
 
-#: includes/class-admin-settings.php:246
-#: includes/class-admin-settings.php:416
-msgid "Move Up"
-msgstr "上へ"
-
-#: includes/class-admin-settings.php:247
-#: includes/class-admin-settings.php:419
-msgid "Move Down"
-msgstr "下へ"
-
-#: includes/class-admin-settings.php:248
-#: includes/class-admin-settings.php:438
-msgid "Move Left"
-msgstr "左へ"
-
-#: includes/class-admin-settings.php:249
-#: includes/class-admin-settings.php:441
-msgid "Move Right"
-msgstr "右へ"
-
-#: includes/class-admin-settings.php:250
-#: includes/class-admin-settings.php:391
-msgid "Edit Folder"
-msgstr "フォルダーを編集"
-
-#: includes/class-admin-settings.php:251
-#: includes/class-admin-settings.php:394
-msgid "Delete Folder"
-msgstr "フォルダーを削除"
-
+#: includes/class-admin-settings.php:171
 #: includes/class-admin-settings.php:252
-#: includes/class-admin-settings.php:423
-msgid "Remove Item"
-msgstr "メニュー項目を解除"
-
-#: includes/class-admin-settings.php:253
-msgid "Are you sure you want to delete this folder? Stored menu items will be restored."
-msgstr "このフォルダーを削除してもよろしいですか ? 格納されているメニュー項目は復元されます。"
-
-#. translators: %d: Maximum allowed items
-#: includes/class-admin-settings.php:256
-#, php-format
-msgid "You can store up to %d menu items per folder."
-msgstr "1 フォルダーあたり最大 %d 件のメニュー項目を格納できます。"
-
-#: includes/class-admin-settings.php:259
-#: includes/class-admin-settings.php:401
-msgid "No menu items selected"
-msgstr "メニュー項目が選択されていません"
-
-#. translators: %d: Maximum allowed folders
-#: includes/class-admin-settings.php:262
-#, php-format
-msgid "You can create up to %d submenu folders in Pro version."
-msgstr "Pro 版では最大 %d 個のサブメニューフォルダーを作成できます。"
-
-#: includes/class-admin-settings.php:287
 msgid "You do not have sufficient permissions to access this page."
 msgstr "このページにアクセスする権限がありません。"
 
-#: includes/class-admin-settings.php:317
-msgid "KU Submenu Folder Settings"
-msgstr "KU Submenu Folder 設定"
+#: includes/class-admin-settings.php:218
+msgid "Move Up"
+msgstr "上へ"
 
-#: includes/class-admin-settings.php:324
+#: includes/class-admin-settings.php:219
+msgid "Move Down"
+msgstr "下へ"
+
+#: includes/class-admin-settings.php:220
+msgid "Move Left"
+msgstr "左へ"
+
+#: includes/class-admin-settings.php:221
+msgid "Move Right"
+msgstr "右へ"
+
+#: includes/class-admin-settings.php:222
+msgid "Edit Folder"
+msgstr "フォルダーを編集"
+
+#: includes/class-admin-settings.php:223
+msgid "Delete Folder"
+msgstr "フォルダーを削除"
+
+#: includes/class-admin-settings.php:224
+#: includes/class-admin-settings.php:395
+msgid "Remove Item"
+msgstr "項目を解除"
+
+#: includes/class-admin-settings.php:225
+msgid "Are you sure you want to delete this folder? Stored menu items will be restored."
+msgstr "このフォルダーを削除してもよろしいですか ? 格納されているメニュー項目は復元されます。"
+
+#: includes/class-admin-settings.php:226
+msgid "Are you sure you want to reset Admin Menu Folder settings to default?"
+msgstr "Admin Menu Folder の設定をデフォルトに復元してもよろしいですか ?"
+
+#. translators: %d: Maximum allowed items
+#: includes/class-admin-settings.php:229
+#, php-format
+msgid "You can store up to %d menu items per folder."
+msgstr "1フォルダーあたり最大%d件のメニュー項目を格納できます。"
+
+#: includes/class-admin-settings.php:232
+#: includes/class-admin-settings.php:378
+msgid "No menu items selected"
+msgstr "メニュー項目が選択されていません"
+
+#: includes/class-admin-settings.php:280
+msgid "Admin Menu Folder Settings"
+msgstr "Admin Menu Folder 設定"
+
+#: includes/class-admin-settings.php:290
+msgid "Reset to Default"
+msgstr "デフォルトに復元"
+
+#: includes/class-admin-settings.php:300
 msgid "Settings saved."
 msgstr "設定を保存しました。"
 
-#: includes/class-admin-settings.php:416
-#: includes/class-admin-settings.php:419
-msgid "Reordering is available in Pro version"
-msgstr "並べ替えは Pro 版限定機能です"
+#: includes/class-admin-settings.php:306
+msgid "Settings reset to default."
+msgstr "設定をデフォルトに復元しました。"
 
-#: includes/class-admin-settings.php:434
-msgid "Reordering menu items and creating multiple folders are available in Pro version."
-msgstr "メニュー項目の並べ替えおよび複数フォルダーの作成は Pro 版限定機能です。"
-
-#: includes/class-admin-settings.php:452
+#: includes/class-admin-settings.php:414
 msgid "Show link to settings page in Toolbar:"
 msgstr "ツールバーに設定ページへのリンクを表示: "
 
-#: includes/class-admin-settings.php:460
+#: includes/class-admin-settings.php:422
 msgid "Add settings menu to Menu Folder:"
 msgstr "Menu Folder に設定メニューを追加: "
 
-#: includes/class-admin-settings.php:464
+#: includes/class-admin-settings.php:426
 msgid "Do not add"
 msgstr "追加しない"
 
-#: includes/class-admin-settings.php:465
+#: includes/class-admin-settings.php:427
 msgid "Add to top"
 msgstr "先頭に追加"
 
-#: includes/class-admin-settings.php:466
+#: includes/class-admin-settings.php:428
 msgid "Add to bottom"
 msgstr "末尾に追加"
 
-#: includes/class-admin-settings.php:472
+#: includes/class-admin-settings.php:434
 msgid "Save Changes"
 msgstr "変更を保存"
 
-#: ku-submenu-folder.php:54
+#: admin-menu-folder.php:53
 msgid "Settings"
 msgstr "設定"
