@@ -60,6 +60,9 @@ class Menu_Filter {
 			return;
 		}
 
+		// WordPressコアと同様にキー昇順でソート（実際のWPサイドメニュー順と完全一致させる）
+		ksort( $menu );
+
 		// 本プラグインが unset する直前の、全メニューの本来の表示順序 (0, 1, 2...) を記録
 		if ( empty( self::$original_menu_order ) ) {
 			$order_idx = 0;
