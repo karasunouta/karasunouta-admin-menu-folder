@@ -453,8 +453,9 @@ class Settings_Page {
 		$items_by_position = array();
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
+		$original_order_map = Menu_Filter::get_original_menu_order();
 
-		// 1. 現在の $menu から未選択項目を取得 (WPの標準位置 $pos をそのまま絶対基準位置として利用)
+		// 1. 現在の $menu から未選択項目を取得 (介入前の絶対出現順インデックスを優先利用)
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -469,11 +470,13 @@ class Settings_Page {
 				$url = 'admin.php?page=' . $slug;
 			}
 
+			$calc_pos = isset( $original_order_map[ $slug ] ) ? (float) $original_order_map[ $slug ] : (float) $pos;
+
 			$items_by_position[] = array(
 				'slug'       => $slug,
 				'title'      => $clean_title,
 				'url'        => $url,
-				'position'   => (float) $pos,
+				'position'   => $calc_pos,
 				'icon_class' => $icon_class,
 				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
@@ -485,7 +488,9 @@ class Settings_Page {
 		foreach ( $selected_menues as $sel ) {
 			$sel_slug = $sel['menu_slug'] ?? '';
 			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $existing_slugs, true ) ) {
-				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
+				$pos        = isset( $original_order_map[ $sel_slug ] )
+					? (float) $original_order_map[ $sel_slug ]
+					: ( isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0 );
 				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
 
 				$url = $sel['data']['url'] ?? $sel_slug;

@@ -24,6 +24,22 @@ class Menu_Filter {
 	private $main;
 
 	/**
+	 * 介入 (unset) 直前の全メニュー本来の表示順序マップ (スラグ => 出現順インデックス)
+	 *
+	 * @var array
+	 */
+	private static $original_menu_order = array();
+
+	/**
+	 * 介入直前の全メニュー本来の表示順序マップを取得
+	 *
+	 * @return array
+	 */
+	public static function get_original_menu_order(): array {
+		return self::$original_menu_order;
+	}
+
+	/**
 	 * コンストラクタ
 	 *
 	 * @param Main $main Main instance.
@@ -42,6 +58,17 @@ class Menu_Filter {
 
 		if ( empty( $menu ) || ! is_array( $menu ) ) {
 			return;
+		}
+
+		// 本プラグインが unset する直前の、全メニューの本来の表示順序 (0, 1, 2...) を記録
+		if ( empty( self::$original_menu_order ) ) {
+			$order_idx = 0;
+			foreach ( $menu as $m_item ) {
+				if ( ! empty( $m_item[2] ) && ! isset( self::$original_menu_order[ $m_item[2] ] ) ) {
+					self::$original_menu_order[ $m_item[2] ] = (float) $order_idx;
+					$order_idx++;
+				}
+			}
 		}
 
 		$options      = $this->main->get_options();
