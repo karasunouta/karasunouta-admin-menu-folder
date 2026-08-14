@@ -252,23 +252,6 @@ class Settings_Page {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'admin-menu-folder' ) );
 		}
 
-		// AMF デバッグ情報（HTMLソースコード内に出力）
-		$debug_raw_menu = array();
-		if ( isset( $GLOBALS['menu'] ) && is_array( $GLOBALS['menu'] ) ) {
-			foreach ( $GLOBALS['menu'] as $k => $v ) {
-				$debug_raw_menu[] = array(
-					'key'   => $k,
-					'slug'  => $v[2] ?? '',
-					'title' => wp_strip_all_tags( $v[0] ?? '' ),
-				);
-			}
-		}
-		echo "\n<!-- AMF_DEBUG_START\n";
-		echo "ORIGINAL_ORDER_MAP:\n" . esc_html( wp_json_encode( Menu_Filter::get_original_menu_order(), JSON_PRETTY_PRINT ) ) . "\n\n";
-		echo "CURRENT_RAW_MENU:\n" . esc_html( wp_json_encode( $debug_raw_menu, JSON_PRETTY_PRINT ) ) . "\n\n";
-		echo "CUSTOM_MENU_ORDER_ACTIVE:\n" . ( apply_filters( 'custom_menu_order', false ) ? 'TRUE' : 'FALSE' ) . "\n";
-		echo "AMF_DEBUG_END -->\n";
-
 		$options         = $this->main->get_options();
 		$menu_folders    = $options['menu_folders'] ?? array();
 		$max_folders     = $this->main->get_max_folders();
@@ -470,9 +453,8 @@ class Settings_Page {
 		$items_by_position = array();
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
-		$original_order_map = Menu_Filter::get_original_menu_order();
 
-		// 1. 現在の $menu から未選択項目を取得 (介入前の絶対出現順インデックスを優先利用)
+		// 1. 現在の $menu から未選択項目を取得 (完成された $menu のキー $pos をそのまま絶対位置として利用)
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -487,13 +469,11 @@ class Settings_Page {
 				$url = 'admin.php?page=' . $slug;
 			}
 
-			$calc_pos = isset( $original_order_map[ $slug ] ) ? (float) $original_order_map[ $slug ] : (float) $pos;
-
 			$items_by_position[] = array(
 				'slug'       => $slug,
 				'title'      => $clean_title,
 				'url'        => $url,
-				'position'   => $calc_pos,
+				'position'   => (float) $pos,
 				'icon_class' => $icon_class,
 				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
@@ -505,9 +485,7 @@ class Settings_Page {
 		foreach ( $selected_menues as $sel ) {
 			$sel_slug = $sel['menu_slug'] ?? '';
 			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $existing_slugs, true ) ) {
-				$pos        = isset( $original_order_map[ $sel_slug ] )
-					? (float) $original_order_map[ $sel_slug ]
-					: ( isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0 );
+				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
 				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
 
 				$url = $sel['data']['url'] ?? $sel_slug;
