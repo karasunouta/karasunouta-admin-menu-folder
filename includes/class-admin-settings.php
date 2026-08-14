@@ -463,7 +463,7 @@ class Settings_Page {
 			}
 		}
 
-		// 2. 現在の $menu から未選択項目を取得 (WPの標準位置 $pos をそのまま絶対基準位置として利用)
+		// 2. 現在の $menu から未選択項目を取得し、unset による前詰まりオフセットを自動計算・加算補正
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -478,11 +478,22 @@ class Settings_Page {
 				$url = 'admin.php?page=' . $slug;
 			}
 
+			$calc_pos = (float) $pos;
+
+			// この未選択項目より前の位置に存在した選択済み(unset済み)項目の件数を連動オフセットとして補正
+			$offset = 0;
+			foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
+				if ( $sel_pos <= ( $calc_pos + $offset ) ) {
+					$offset++;
+				}
+			}
+			$calc_pos += $offset;
+
 			$items_by_position[] = array(
 				'slug'       => $slug,
 				'title'      => $clean_title,
 				'url'        => $url,
-				'position'   => (float) $pos,
+				'position'   => $calc_pos,
 				'icon_class' => $icon_class,
 				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
