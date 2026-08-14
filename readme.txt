@@ -4,7 +4,7 @@ Donate link: https://karasunouta.com
 Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,6 +49,9 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 1. Settings page preview showing sidebar menu selection and folder preview.
 
 == Changelog ==
+
+= 1.2.1 =
+* Fix: Ensure consistent admin menu item ordering across different environments with or without custom_menu_order filters.
 
 = 1.2.0 =
 * Refine user interface and asset loading scripts.

@@ -1,6 +1,6 @@
 {
 	"name": "admin-menu-folder",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Organizes and stores various WP side menu items into folder structures.",
 	"files": [
 		"admin-menu-folder.php",
