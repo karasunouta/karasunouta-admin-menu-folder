@@ -252,6 +252,22 @@ class Settings_Page {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'admin-menu-folder' ) );
 		}
 
+		// AMF デバッグ情報（HTMLソースコード内に出力）
+		$debug_raw_menu = array();
+		if ( isset( $GLOBALS['menu'] ) && is_array( $GLOBALS['menu'] ) ) {
+			foreach ( $GLOBALS['menu'] as $k => $v ) {
+				$debug_raw_menu[] = array(
+					'key'   => $k,
+					'slug'  => $v[2] ?? '',
+					'title' => wp_strip_all_tags( $v[0] ?? '' ),
+				);
+			}
+		}
+		echo "\n<!-- AMF_DEBUG_START\n";
+		echo "CURRENT_RAW_MENU:\n" . esc_html( wp_json_encode( $debug_raw_menu, JSON_PRETTY_PRINT ) ) . "\n\n";
+		echo "CUSTOM_MENU_ORDER_ACTIVE:\n" . ( apply_filters( 'custom_menu_order', false ) ? 'TRUE' : 'FALSE' ) . "\n";
+		echo "AMF_DEBUG_END -->\n";
+
 		$options         = $this->main->get_options();
 		$menu_folders    = $options['menu_folders'] ?? array();
 		$max_folders     = $this->main->get_max_folders();
