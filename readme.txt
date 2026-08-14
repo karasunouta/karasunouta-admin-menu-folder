@@ -1,4 +1,4 @@
-=== KU Submenu Folder ===
+=== Admin Menu Folder ===
 Contributors: karasunouta
 Donate link: https://karasunouta.com
 Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
@@ -13,9 +13,9 @@ Organize and clean up your WordPress admin sidebar menu items into custom folder
 
 == Description ==
 
-KU Submenu Folder is a simple and lightweight plugin that aggregates multiple WordPress admin sidebar menu items into a clean, dedicated submenu folder. 
+Admin Menu Folder is a simple and lightweight plugin that aggregates multiple WordPress admin sidebar menu items into a clean, dedicated submenu folder. 
 
-As you install more plugins, your admin sidebar easily becomes cluttered with items you rarely touch. KU Submenu Folder lets you tuck away infrequently used menus into a single organized folder. This allows you to build a streamlined sidebar focused exclusively on your daily essential menus, while maintaining immediate access to all other tools whenever you need them.
+As you install more plugins, your admin sidebar easily becomes cluttered with items you rarely touch. Admin Menu Folder lets you tuck away infrequently used menus into a single organized folder. This allows you to build a streamlined sidebar focused exclusively on your daily essential menus, while maintaining immediate access to all other tools whenever you need them.
 
 = Key Features =
 
@@ -27,17 +27,17 @@ As you install more plugins, your admin sidebar easily becomes cluttered with it
 
 == Installation ==
 
-1. Upload the `ku-submenu-folder` directory to the `/wp-content/plugins/` directory, or install the plugin directly through the WordPress plugins screen.
+1. Upload the `admin-menu-folder` directory to the `/wp-content/plugins/` directory, or install the plugin directly through the WordPress plugins screen.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Go to 'Settings' > 'KU Submenu Folder' to manage and organize your sidebar menu items.
+3. Go to 'Settings' > 'Admin Menu Folder' to manage and organize your sidebar menu items.
 
 == Frequently Asked Questions ==
 
 = Can I create multiple submenu folders? =
-The standard version supports grouping menu items into 1 main submenu folder. For creating unlimited folders, custom folder icons, custom folder titles, and custom item reordering, please check out KU Submenu Folder Pro.
+The standard version supports grouping menu items into 1 main submenu folder. For creating unlimited folders, custom folder icons, custom folder titles, and custom item reordering, please check out Admin Menu Folder Pro.
 
 = Will moving menu items change their functionality or permissions? =
-No. KU Submenu Folder only changes the location where menu links are rendered in the admin sidebar. User capabilities and plugin page URLs remain unchanged.
+No. Admin Menu Folder only changes the location where menu links are rendered in the admin sidebar. User capabilities and plugin page URLs remain unchanged.
 
 = How do I access child menu items of a menu item placed inside a folder? =
 Click on the menu item inside the folder (e.g., Submenu Folder > Target Menu). This opens the parent page and expands its submenu structure in the sidebar, allowing you to access all of its child items.
@@ -59,4 +59,4 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 == Source Code & Development ==
 
 The source code for this plugin is available on GitHub:
-https://github.com/karasunouta/ku-submenu-folder
+https://github.com/karasunouta/admin-menu-folder

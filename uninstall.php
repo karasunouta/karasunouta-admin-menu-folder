@@ -1,8 +1,8 @@
 <?php
 /**
- * Uninstall KU Submenu Folder
+ * Uninstall Admin Menu Folder
  *
- * @package KuSubmenuFolder
+ * @package AdminMenuFolder
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -10,5 +10,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // プラグイン設定オプションの削除
+delete_option( 'admin_menu_folder_options' );
+delete_site_option( 'admin_menu_folder_options' );
 delete_option( 'ku_submenu_folder_options' );
 delete_site_option( 'ku_submenu_folder_options' );
+

@@ -1,11 +1,11 @@
 <?php
 /**
- * KuSubmenuFolder Main Class
+ * AdminMenuFolder Main Class
  *
- * @package KuSubmenuFolder
+ * @package AdminMenuFolder
  */
 
-namespace karasunouta\KuSubmenuFolder;
+namespace karasunouta\AdminMenuFolder;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -19,7 +19,7 @@ class Main {
 	/**
 	 * オプションキー名
 	 */
-	public const OPTION_KEY = 'ku_submenu_folder_options';
+	public const OPTION_KEY = 'admin_menu_folder_options';
 
 	/**
 	 * シングルトンインスタンス
@@ -81,7 +81,7 @@ class Main {
 		 *
 		 * @param bool $is_pro デフォルトは false
 		 */
-		return (bool) apply_filters( 'ku_submenu_folder_is_pro', false );
+		return (bool) apply_filters( 'amf_is_pro', false );
 	}
 
 	/**
@@ -95,7 +95,7 @@ class Main {
 		 *
 		 * @param int $max_folders 通常版デフォルトは1
 		 */
-		return (int) apply_filters( 'ku_submenu_folder_max_folders', 1 );
+		return (int) apply_filters( 'amf_max_folders', 1 );
 	}
 
 	/**
@@ -110,7 +110,7 @@ class Main {
 		 * @param int $max_items デフォルトは99件
 		 */
 		$default_max = 99;
-		return (int) apply_filters( 'ku_submenu_folder_max_items', $default_max );
+		return (int) apply_filters( 'amf_max_items', $default_max );
 	}
 
 	/**
@@ -121,18 +121,18 @@ class Main {
 	 */
 	public function get_protected_slugs(): array {
 		$options   = $this->get_options();
-		$protected = array( 'ku-submenu-folder', 'ku-submenu' );
+		$protected = array( 'admin-menu-folder', 'amf-folder' );
 
-		if ( ! empty( $options['sub_menues'] ) && is_array( $options['sub_menues'] ) ) {
-			foreach ( $options['sub_menues'] as $folder ) {
+		if ( ! empty( $options['menu_folders'] ) && is_array( $options['menu_folders'] ) ) {
+			foreach ( $options['menu_folders'] as $folder ) {
 				$id   = $folder['id'] ?? '';
 				$slug = $folder['slug'] ?? $id;
 
 				if ( ! empty( $slug ) ) {
 					$protected[] = $slug;
-					$protected[] = 'ku-submenu-' . $slug;
+					$protected[] = 'amf-folder-' . $slug;
 					if ( 'folder_default' !== $id ) {
-						$protected[] = 'ku-submenu-' . $id;
+						$protected[] = 'amf-folder-' . $id;
 					}
 				}
 			}
@@ -142,18 +142,18 @@ class Main {
 	}
 
 	/**
-	 * プラグイン設定を取得（データ構造の標準化およびPro停止時の自動フォールバックを保証）
+	 * プラグイン設定を取得
 	 *
 	 * @return array
 	 */
 	public function get_options(): array {
 		$defaults = array(
-			'version'             => KUSF_VERSION,
+			'version'             => AMF_VERSION,
 			'show_admin_bar_link' => false,
-			'sub_menues'          => array(
+			'menu_folders'        => array(
 				array(
 					'id'       => 'folder_default',
-					'title'    => 'KU Submenu',
+					'title'    => 'Menu Folder',
 					'icon'     => 'dashicons-category',
 					'position' => 99,
 					'menues'   => array(),
@@ -168,69 +168,45 @@ class Main {
 
 		$options = wp_parse_args( $saved, $defaults );
 
-		// sub_menues が空の場合の保護
-		if ( empty( $options['sub_menues'] ) || ! is_array( $options['sub_menues'] ) ) {
-			$options['sub_menues'] = $defaults['sub_menues'];
+		// デフォルトでは第1フォルダーのタイトルを標準名 'Menu Folder' にセット
+		if ( ! empty( $options['menu_folders'][0] ) ) {
+			$options['menu_folders'][0]['title'] = 'Menu Folder';
 		}
 
-		// Pro版が無効な場合の自動フォールバックルール（タイトルのKU Submenu復元・アイコン復元・1フォルダー・最大件数マスク・元位置順への自動仮ソート）
-		if ( ! $this->is_pro() ) {
-			$first_folder = $options['sub_menues'][0] ?? $defaults['sub_menues'][0];
-
-			// フォルダー名とアイコンを通常版デフォルトに復元
-			$first_folder['title'] = 'KU Submenu';
-			$first_folder['icon']  = 'dashicons-category';
-
-			if ( ! empty( $first_folder['menues'] ) && is_array( $first_folder['menues'] ) ) {
-				$items = array_slice( $first_folder['menues'], 0, $this->get_max_items() );
-
-				// 通常版動作時のみ、DBデータは変更せず動的に original_position (WP元位置) の昇順で仮ソートして表示
-				usort(
-					$items,
-					function ( $a, $b ) {
-						$pos_a = (float) ( $a['data']['original_position'] ?? ( $a['position'] ?? 999.0 ) );
-						$pos_b = (float) ( $b['data']['original_position'] ?? ( $b['position'] ?? 999.0 ) );
-						return $pos_a <=> $pos_b;
-					}
-				);
-
-				$first_folder['menues'] = array_values( $items );
-			} else {
-				$first_folder['menues'] = array();
+		// フォルダー内のメニュー項目を元のWPメニュー位置 (original_position) の昇順でソート
+		if ( ! empty( $options['menu_folders'] ) && is_array( $options['menu_folders'] ) ) {
+			foreach ( $options['menu_folders'] as &$folder ) {
+				if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
+					usort(
+						$folder['menues'],
+						function ( $a, $b ) {
+							$pos_a = (float) ( $a['data']['original_position'] ?? ( $a['position'] ?? 999.0 ) );
+							$pos_b = (float) ( $b['data']['original_position'] ?? ( $b['position'] ?? 999.0 ) );
+							return $pos_a <=> $pos_b;
+						}
+					);
+					$folder['menues'] = array_values( $folder['menues'] );
+				}
 			}
-
-			$options['sub_menues'] = array( $first_folder );
+			unset( $folder );
 		}
 
-		return $options;
+		/**
+		 * 設定データをフィルタリング
+		 *
+		 * @param array $options 設定配列.
+		 * @param array $saved DBから直接読み込んだ生の保存設定.
+		 */
+		return apply_filters( 'amf_get_options', $options, $saved );
 	}
 
 	/**
-	 * 生のDB保存オプションを取得（Pro無効時のデデュープ・マージ処理用）
+	 * 生のDB保存オプションを取得
 	 *
 	 * @return array
 	 */
 	public function get_raw_options(): array {
-		$defaults = array(
-			'version'             => KUSF_VERSION,
-			'show_admin_bar_link' => false,
-			'sub_menues'          => array(
-				array(
-					'id'       => 'folder_default',
-					'title'    => 'KU Submenu',
-					'icon'     => 'dashicons-category',
-					'position' => 99,
-					'menues'   => array(),
-				),
-			),
-		);
-
-		$saved = get_option( self::OPTION_KEY, array() );
-		if ( ! is_array( $saved ) ) {
-			$saved = array();
-		}
-
-		return wp_parse_args( $saved, $defaults );
+		return $this->get_options();
 	}
 
 	/**
@@ -241,6 +217,15 @@ class Main {
 	 */
 	public function save_options( array $options ): bool {
 		return update_option( self::OPTION_KEY, $options );
+	}
+
+	/**
+	 * プラグイン設定を初期状態に削除・復元
+	 *
+	 * @return bool
+	 */
+	public function reset_options(): bool {
+		return delete_option( self::OPTION_KEY );
 	}
 
 	/**
@@ -260,12 +245,12 @@ class Main {
 
 		$wp_admin_bar->add_node(
 			array(
-				'id'    => 'ku-submenu-folder',
+				'id'    => 'admin-menu-folder',
 				'title' => sprintf(
 					'<span class="ab-icon dashicons dashicons-category" style="top:2px;"></span><span class="ab-label">%s</span>',
-					esc_html__( 'KU Submenu Folder', 'ku-submenu-folder' )
+					esc_html__( 'Admin Menu Folder', 'admin-menu-folder' )
 				),
-				'href'  => admin_url( 'options-general.php?page=ku-submenu-folder' ),
+				'href'  => admin_url( 'options-general.php?page=admin-menu-folder' ),
 			)
 		);
 	}

@@ -1,11 +1,11 @@
 <?php
 /**
- * KuSubmenuFolder Admin Menu Filter Class
+ * AdminMenuFolder Admin Menu Filter Class
  *
- * @package KuSubmenuFolder
+ * @package AdminMenuFolder
  */
 
-namespace karasunouta\KuSubmenuFolder;
+namespace karasunouta\AdminMenuFolder;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -44,10 +44,10 @@ class Menu_Filter {
 			return;
 		}
 
-		$options    = $this->main->get_options();
-		$sub_menues = $options['sub_menues'] ?? array();
+		$options      = $this->main->get_options();
+		$menu_folders = $options['menu_folders'] ?? array();
 
-		if ( empty( $sub_menues ) || ! is_array( $sub_menues ) ) {
+		if ( empty( $menu_folders ) || ! is_array( $menu_folders ) ) {
 			return;
 		}
 
@@ -57,7 +57,7 @@ class Menu_Filter {
 
 		// 全フォルダーの格納対象メニューと全ターゲットスラグを収集
 		$all_target_slugs = array();
-		foreach ( $sub_menues as $folder ) {
+		foreach ( $menu_folders as $folder ) {
 			if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
 				foreach ( $folder['menues'] as $item ) {
 					if ( ! empty( $item['menu_slug'] ) ) {
@@ -80,7 +80,7 @@ class Menu_Filter {
 
 			if ( in_array( $menu_slug, $all_target_slugs, true ) ) {
 				// 自プラグイン自体のメニューや設定メニューの移動は防ぐ
-				if ( 'ku-submenu' === $menu_slug || 'ku-submenu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'ku-submenu-' ) ) {
+				if ( 'amf-folder' === $menu_slug || 'admin-menu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'amf-folder-' ) ) {
 					continue;
 				}
 
@@ -96,20 +96,20 @@ class Menu_Filter {
 
 		// 各フォルダーごとに処理
 		$valid_folders = array();
-		foreach ( $sub_menues as $folder_idx => $folder ) {
+		foreach ( $menu_folders as $folder_idx => $folder ) {
 			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
-			$parent_slug  = ( 0 === $folder_idx ) ? 'ku-submenu' : 'ku-submenu-' . $folder_id;
-			$folder_title = $folder['title'] ?? 'KU Submenu';
+			$parent_slug  = ( 0 === $folder_idx ) ? 'amf-folder' : 'amf-folder-' . $folder_id;
+			$folder_title = $folder['title'] ?? 'Menu Folder';
 			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$folder_items = $folder['menues'] ?? array();
 
 			// 第2フォルダー以降で親メニューがまだ未登録の場合、Pro版側のアクションフック経由で動的に追加登録
 			if ( 0 !== $folder_idx ) {
-				do_action( 'kusf_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
+				do_action( 'amf_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
 				// デフォルトフォルダーのタイトル・アイコン反映
 				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && 'ku-submenu' === $m_item[2] ) {
+					if ( isset( $m_item[2] ) && 'amf-folder' === $m_item[2] ) {
 						$menu[ $k ][0] = $folder_title;
 						$menu[ $k ][6] = $folder_icon;
 						break;
@@ -177,18 +177,18 @@ class Menu_Filter {
 				array_unshift(
 					$submenu[ $parent_slug ],
 					array(
-						__( 'Submenu Settings', 'ku-submenu-folder' ),
+						__( 'Menu Folder Settings', 'admin-menu-folder' ),
 						'manage_options',
-						'options-general.php?page=ku-submenu-folder',
-						__( 'Submenu Settings', 'ku-submenu-folder' ),
+						'options-general.php?page=admin-menu-folder',
+						__( 'Menu Folder Settings', 'admin-menu-folder' ),
 					)
 				);
 			} elseif ( 'last' === $setting_link_pos ) {
 				$submenu[ $parent_slug ][] = array(
-					__( 'Submenu Settings', 'ku-submenu-folder' ),
+					__( 'Menu Folder Settings', 'admin-menu-folder' ),
 					'manage_options',
-					'options-general.php?page=ku-submenu-folder',
-					__( 'Submenu Settings', 'ku-submenu-folder' ),
+					'options-general.php?page=admin-menu-folder',
+					__( 'Menu Folder Settings', 'admin-menu-folder' ),
 				);
 			}
 
@@ -202,9 +202,9 @@ class Menu_Filter {
 	/**
 	 * 全フォルダー項目をユーザーの設定順（0, 1, 2...）に従い、隙間のない連続キー（+0, +1, +2...）で最末尾へ配置
 	 *
-	 * @param array $sub_menues サブメニューフォルダー設定配列.
+	 * @param array $menu_folders サブメニューフォルダー設定配列.
 	 */
-	private function reposition_all_folders_to_bottom( array $sub_menues ) {
+	private function reposition_all_folders_to_bottom( array $menu_folders ) {
 		global $menu;
 		if ( empty( $menu ) || ! is_array( $menu ) ) {
 			return;
@@ -212,9 +212,9 @@ class Menu_Filter {
 
 		// 全フォルダーの親スラグ順序を生成
 		$folder_slugs = array();
-		foreach ( $sub_menues as $f_idx => $folder ) {
+		foreach ( $menu_folders as $f_idx => $folder ) {
 			$f_id           = $folder['id'] ?? ( 'folder_' . $f_idx );
-			$parent_slug    = ( 0 === $f_idx ) ? 'ku-submenu' : 'ku-submenu-' . $f_id;
+			$parent_slug    = ( 0 === $f_idx ) ? 'amf-folder' : 'amf-folder-' . $f_id;
 			$folder_slugs[] = $parent_slug;
 		}
 
@@ -288,3 +288,4 @@ class Menu_Filter {
 		return false;
 	}
 }
+

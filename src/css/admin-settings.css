@@ -1,12 +1,12 @@
 /**
- * KU Submenu Folder - Admin Settings Styles
+ * Admin Menu Folder - Admin Settings Styles
  */
 
-.kusf-settings-wrap {
+.amf-settings-wrap {
 	margin-top: 20px;
 }
 
-.kusf-settings-container {
+.amf-settings-container {
 	display: flex;
 	gap: 30px;
 	margin-top: 20px;
@@ -16,7 +16,7 @@
 /* ==========================================================================
    左側: 擬似WPサイドメニュー (Pseudo Sidebar)
    ========================================================================== */
-.kusf-pseudo-sidebar-wrapper {
+.amf-pseudo-sidebar-wrapper {
 	width: 240px;
 	background: #1d2327;
 	border-radius: 4px;
@@ -25,13 +25,13 @@
 	flex-shrink: 0;
 }
 
-.kusf-pseudo-menu-list {
+.amf-pseudo-menu-list {
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-.kusf-pseudo-menu-item {
+.amf-pseudo-menu-item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -44,55 +44,55 @@
 	user-select: none;
 }
 
-.kusf-pseudo-menu-item:last-child {
+.amf-pseudo-menu-item:last-child {
 	border-bottom: none;
 }
 
-.kusf-pseudo-menu-item:not(.is-disabled) {
+.amf-pseudo-menu-item:not(.is-disabled) {
 	cursor: pointer;
 }
 
-.kusf-pseudo-menu-item:hover:not(.is-disabled) {
+.amf-pseudo-menu-item:hover:not(.is-disabled) {
 	background-color: #2c3338;
 	color: #72aee6;
 }
 
-.kusf-pseudo-menu-item.is-selected {
+.amf-pseudo-menu-item.is-selected {
 	border-left: 4px solid #72aee6;
 	background: linear-gradient(90deg, #1e496e 0%, #2271b1 100%);
 	color: #ffffff;
 	font-weight: 600;
 }
 
-.kusf-pseudo-menu-item.is-selected-other {
+.amf-pseudo-menu-item.is-selected-other {
 	background-color: #38244f;
 	color: #ebd8ff;
 }
 
-.kusf-pseudo-menu-item.is-selected-other:hover {
+.amf-pseudo-menu-item.is-selected-other:hover {
 	background-color: #472f63;
 }
 
-.kusf-pseudo-menu-item.is-disabled {
+.amf-pseudo-menu-item.is-disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
 	background-color: #171b1e;
 }
 
 /* フォーカス中フォルダー項目スタイル (単色ブルー) */
-.kusf-pseudo-menu-item.is-disabled.is-selected-folder-active {
+.amf-pseudo-menu-item.is-disabled.is-selected-folder-active {
 	opacity: 1;
 	background-color: #2271b1;
 	color: #ffffff;
 	font-weight: 600;
 }
 
-.kusf-pseudo-menu-item.is-disabled input[type="checkbox"] {
+.amf-pseudo-menu-item.is-disabled input[type="checkbox"] {
 	cursor: not-allowed;
 	opacity: 0.5;
 }
 
-.kusf-menu-label {
+.amf-menu-label {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -101,7 +101,7 @@
 	white-space: nowrap;
 }
 
-.kusf-menu-icon {
+.amf-menu-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -109,21 +109,21 @@
 	height: 20px;
 }
 
-.kusf-menu-icon .dashicons,
-.kusf-menu-icon img {
+.amf-menu-icon .dashicons,
+.amf-menu-icon img {
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
 	color: currentColor;
 }
 
-.kusf-menu-title {
+.amf-menu-title {
 	font-weight: 500;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-.kusf-menu-checkbox input[type="checkbox"] {
+.amf-menu-checkbox input[type="checkbox"] {
 	margin: 0;
 	cursor: pointer;
 	width: 18px;
@@ -131,54 +131,38 @@
 	border-color: #8c8f94;
 }
 
-.kusf-pseudo-menu-item.is-selected .kusf-menu-checkbox input[type="checkbox"] {
+.amf-pseudo-menu-item.is-selected .amf-menu-checkbox input[type="checkbox"] {
 	border-color: #ffffff;
 }
 
-.kusf-header-area {
+.amf-header-area {
 	display: flex;
 	align-items: center;
 	gap: 15px;
 }
 
-.kusf-add-btn {
+.amf-add-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
 	position: relative;
 }
 
-.kusf-pro-badge {
-	background: #d63638;
-	color: #ffffff;
-	font-size: 10px;
-	font-weight: 700;
-	padding: 1px 5px;
-	border-radius: 3px;
-	line-height: 1.2;
-	text-transform: uppercase;
-}
-
-.is-disabled-pro {
-	opacity: 0.6;
-	cursor: not-allowed !important;
-}
-
 /* ==========================================================================
-   右側: KU Submenu プレビュー・カスタマイザー (Preview Container & Grid)
+   右側: Admin Menu Folder プレビュー・カスタマイザー (Preview Container & Grid)
    ========================================================================== */
-.kusf-preview-container {
+.amf-preview-container {
 	flex-grow: 1;
 }
 
-.kusf-folders-grid {
+.amf-folders-grid {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 20px;
 	align-items: flex-start;
 }
 
-.kusf-folder-card {
+.amf-folder-card {
 	background: #ffffff;
 	border: 2px solid #c3c4c7;
 	border-radius: 6px;
@@ -190,12 +174,12 @@
 	cursor: pointer;
 }
 
-.kusf-folder-card.is-active {
+.amf-folder-card.is-active {
 	border-color: #2271b1;
 	box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3), 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.kusf-folder-header {
+.amf-folder-header {
 	background: #1d2327;
 	color: #ffffff;
 	padding: 10px 14px;
@@ -207,58 +191,59 @@
 	user-select: none;
 }
 
-.kusf-folder-card.is-active .kusf-folder-header {
+.amf-folder-card.is-active .amf-folder-header {
 	background: #2271b1;
 }
 
-.kusf-folder-header-left {
+.amf-folder-header-left {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	overflow: hidden;
 }
 
-.kusf-folder-icon .dashicons {
+.amf-folder-icon .dashicons {
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
 }
 
-.kusf-folder-title {
+.amf-folder-title {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-.kusf-folder-header-actions {
+.amf-folder-header-actions {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 }
 
-.kusf-folder-header-actions button {
+.amf-folder-header-actions button {
 	background: transparent;
 	border: none;
-	color: #a7aaad;
+	color: rgba(255, 255, 255, 0.9);
 	cursor: pointer;
 	padding: 3px;
 	border-radius: 3px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	transition: all 0.15s ease;
 }
 
-.kusf-folder-header-actions button:hover:not(:disabled) {
+.amf-folder-header-actions button:hover:not(:disabled) {
 	color: #ffffff;
-	background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.25);
 }
 
-.kusf-folder-header-actions button:disabled {
+.amf-folder-header-actions button:disabled {
 	opacity: 0.3;
 	cursor: not-allowed;
 }
 
-.kusf-folder-sublist {
+.amf-folder-sublist {
 	margin: 0;
 	padding: 6px 0;
 	list-style: none;
@@ -266,7 +251,7 @@
 	min-height: 60px;
 }
 
-.kusf-empty-notice {
+.amf-empty-notice {
 	padding: 20px 10px;
 	text-align: center;
 	color: #a7aaad;
@@ -275,24 +260,7 @@
 	user-select: none;
 }
 
-/* Pro版機能の案内ボックス（通常版用） */
-.kusf-pro-notice-box {
-	background: #f6f7f7;
-	border-top: 1px solid #dcdcde;
-	padding: 10px 12px;
-	font-size: 11px;
-	color: #646970;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	line-height: 1.3;
-}
-
-.kusf-pro-notice-text {
-	color: #50575e;
-}
-
-.kusf-subitem-row {
+.amf-subitem-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -302,11 +270,11 @@
 	border-bottom: 1px solid #3c434a;
 }
 
-.kusf-subitem-row:last-child {
+.amf-subitem-row:last-child {
 	border-bottom: none;
 }
 
-.kusf-subitem-title {
+.amf-subitem-title {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -315,12 +283,12 @@
 	white-space: nowrap;
 }
 
-.kusf-subitem-title .dashicons,
-.kusf-subitem-title .kusf-menu-icon .dashicons {
+.amf-subitem-title .dashicons,
+.amf-subitem-title .amf-menu-icon .dashicons {
 	color: #a7aaad;
 }
 
-.kusf-subitem-title .kusf-menu-icon {
+.amf-subitem-title .amf-menu-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -328,18 +296,18 @@
 	height: 18px;
 }
 
-.kusf-subitem-title .kusf-menu-icon img {
+.amf-subitem-title .amf-menu-icon img {
 	width: 16px;
 	height: 16px;
 	object-fit: contain;
 }
 
-.kusf-subitem-actions {
+.amf-subitem-actions {
 	display: flex;
 	gap: 3px;
 }
 
-.kusf-subitem-actions .button {
+.amf-subitem-actions .button {
 	padding: 0 4px;
 	min-height: 22px;
 	height: 22px;
@@ -349,24 +317,24 @@
 	color: #f0f0f1;
 }
 
-.kusf-subitem-actions .button:hover:not(:disabled) {
+.amf-subitem-actions .button:hover:not(:disabled) {
 	background: #2271b1;
 	border-color: #2271b1;
 	color: #ffffff;
 }
 
-.kusf-subitem-actions .kusf-item-remove-btn:hover:not(:disabled) {
+.amf-subitem-actions .amf-item-remove-btn:hover:not(:disabled) {
 	background: #d63638;
 	border-color: #d63638;
 	color: #ffffff;
 }
 
-.kusf-subitem-actions .button:disabled {
+.amf-subitem-actions .button:disabled {
 	opacity: 0.35;
 	cursor: not-allowed;
 }
 
-.kusf-folder-footer-actions {
+.amf-folder-footer-actions {
 	display: flex;
 	justify-content: center;
 	gap: 12px;
@@ -375,8 +343,8 @@
 	border-top: 1px solid #dcdcde;
 }
 
-.kusf-folder-footer-actions .button.kusf-folder-move-left,
-.kusf-folder-footer-actions .button.kusf-folder-move-right {
+.amf-folder-footer-actions .button.amf-folder-move-left,
+.amf-folder-footer-actions .button.amf-folder-move-right {
 	border-radius: 50% !important;
 	width: 32px !important;
 	height: 32px !important;
@@ -394,8 +362,8 @@
 	transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
-.kusf-folder-footer-actions .button.kusf-folder-move-left .dashicons,
-.kusf-folder-footer-actions .button.kusf-folder-move-right .dashicons {
+.amf-folder-footer-actions .button.amf-folder-move-left .dashicons,
+.amf-folder-footer-actions .button.amf-folder-move-right .dashicons {
 	font-size: 20px !important;
 	width: 20px !important;
 	height: 20px !important;
@@ -404,15 +372,15 @@
 	margin: 0 !important;
 }
 
-.kusf-folder-footer-actions .button.kusf-folder-move-left:hover:not(:disabled),
-.kusf-folder-footer-actions .button.kusf-folder-move-right:hover:not(:disabled) {
+.amf-folder-footer-actions .button.amf-folder-move-left:hover:not(:disabled),
+.amf-folder-footer-actions .button.amf-folder-move-right:hover:not(:disabled) {
 	background: #2271b1 !important;
 	color: #ffffff !important;
 	transform: scale(1.08);
 }
 
-.kusf-folder-footer-actions .button.kusf-folder-move-left:disabled,
-.kusf-folder-footer-actions .button.kusf-folder-move-right:disabled {
+.amf-folder-footer-actions .button.amf-folder-move-left:disabled,
+.amf-folder-footer-actions .button.amf-folder-move-right:disabled {
 	background: #c3c4c7 !important;
 	color: #8c8f94 !important;
 	opacity: 0.4 !important;
@@ -421,19 +389,19 @@
 	transform: none !important;
 }
 
-.kusf-folder-footer-actions .button.kusf-folder-move-left:disabled .dashicons,
-.kusf-folder-footer-actions .button.kusf-folder-move-right:disabled .dashicons {
+.amf-folder-footer-actions .button.amf-folder-move-left:disabled .dashicons,
+.amf-folder-footer-actions .button.amf-folder-move-right:disabled .dashicons {
 	color: #8c8f94 !important;
 }
 
-.kusf-form-actions {
+.amf-form-actions {
 	margin-top: 25px;
 }
 
 /* ==========================================================================
    モーダルダイアログ (Modal Overlay & Card)
    ========================================================================== */
-.kusf-modal-overlay {
+.amf-modal-overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -446,7 +414,7 @@
 	justify-content: center;
 }
 
-.kusf-modal-card {
+.amf-modal-card {
 	background: #ffffff;
 	border-radius: 8px;
 	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
@@ -457,7 +425,7 @@
 	flex-direction: column;
 }
 
-.kusf-modal-header {
+.amf-modal-header {
 	padding: 15px 20px;
 	background: #1d2327;
 	color: #ffffff;
@@ -466,13 +434,13 @@
 	justify-content: space-between;
 }
 
-.kusf-modal-header h3 {
+.amf-modal-header h3 {
 	margin: 0;
 	font-size: 16px;
 	color: #ffffff;
 }
 
-.kusf-modal-close-btn {
+.amf-modal-close-btn {
 	background: transparent;
 	border: none;
 	color: #a7aaad;
@@ -481,34 +449,34 @@
 	line-height: 1;
 }
 
-.kusf-modal-close-btn:hover {
+.amf-modal-close-btn:hover {
 	color: #ffffff;
 }
 
-.kusf-modal-body {
+.amf-modal-body {
 	padding: 20px;
 }
 
-.kusf-field-group {
+.amf-field-group {
 	margin-bottom: 18px;
 }
 
-.kusf-field-group:last-child {
+.amf-field-group:last-child {
 	margin-bottom: 0;
 }
 
-.kusf-field-group label {
+.amf-field-group label {
 	display: block;
 	font-weight: 600;
 	margin-bottom: 6px;
 	font-size: 13px;
 }
 
-.kusf-field-group input[type="text"] {
+.amf-field-group input[type="text"] {
 	width: 100%;
 }
 
-.kusf-icon-picker-grid {
+.amf-icon-picker-grid {
 	display: grid;
 	grid-template-columns: repeat(5, 1fr);
 	gap: 8px;
@@ -520,7 +488,7 @@
 	background: #f6f7f7;
 }
 
-.kusf-icon-option-btn {
+.amf-icon-option-btn {
 	background: #ffffff;
 	border: 1px solid #c3c4c7;
 	border-radius: 4px;
@@ -532,22 +500,22 @@
 	transition: all 0.15s ease;
 }
 
-.kusf-icon-option-btn:hover {
+.amf-icon-option-btn:hover {
 	border-color: #2271b1;
 	background: #f0f6fc;
 }
 
-.kusf-icon-option-btn.is-selected {
+.amf-icon-option-btn.is-selected {
 	background: #2271b1;
 	border-color: #2271b1;
 	color: #ffffff;
 }
 
-.kusf-icon-option-btn.is-selected .dashicons {
+.amf-icon-option-btn.is-selected .dashicons {
 	color: #ffffff;
 }
 
-.kusf-modal-footer {
+.amf-modal-footer {
 	padding: 12px 20px;
 	background: #f0f0f1;
 	border-top: 1px solid #dcdcde;
@@ -557,7 +525,7 @@
 }
 
 /* 設定オプション共通カード枠 */
-.kusf-setting-options-card {
+.amf-setting-options-card {
 	margin-top: 24px;
 	padding: 16px 20px;
 	background: #ffffff;
@@ -571,7 +539,7 @@
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.kusf-setting-option-row {
+.amf-setting-option-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -579,18 +547,19 @@
 	padding: 4px 0;
 }
 
-.kusf-setting-option-row:not(:last-child) {
+.amf-setting-option-row:not(:last-child) {
 	border-bottom: 1px dashed #dcdcde;
 	padding-bottom: 12px;
 }
 
-.kusf-setting-option-label {
+.amf-setting-option-label {
 	font-weight: 600;
 	color: #1d2327;
 	font-size: 13px;
 }
 
-.kusf-setting-option-select {
+.amf-setting-option-select {
 	min-width: 160px;
 	padding: 4px 8px;
 }
+
