@@ -454,16 +454,7 @@ class Settings_Page {
 		$raw_menu           = $GLOBALS['menu'] ?? array();
 		$existing_slugs     = array();
 
-		// 1. 現在除外されている選択済みスラグと position のマップを作成
-		$selected_slugs_map = array();
-		foreach ( $selected_menues as $sel ) {
-			if ( ! empty( $sel['menu_slug'] ) ) {
-				$pos = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
-				$selected_slugs_map[ $sel['menu_slug'] ] = $pos;
-			}
-		}
-
-		// 2. 現在の $menu から未選択項目を取得し、unset による前詰まりオフセットを自動計算・加算補正
+		// 1. 現在の $menu から未選択項目を取得 (WPの標準位置 $pos をそのまま絶対基準位置として利用)
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -478,22 +469,11 @@ class Settings_Page {
 				$url = 'admin.php?page=' . $slug;
 			}
 
-			$calc_pos = (float) $pos;
-
-			// この未選択項目より前の位置に存在した選択済み(unset済み)項目の件数を連動オフセットとして補正
-			$offset = 0;
-			foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
-				if ( $sel_pos <= ( $calc_pos + $offset ) ) {
-					$offset++;
-				}
-			}
-			$calc_pos += $offset;
-
 			$items_by_position[] = array(
 				'slug'       => $slug,
 				'title'      => $clean_title,
 				'url'        => $url,
-				'position'   => $calc_pos,
+				'position'   => (float) $pos,
 				'icon_class' => $icon_class,
 				'icon_html'  => $this->build_icon_html( $icon_class ),
 			);
