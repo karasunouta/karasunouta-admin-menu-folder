@@ -252,22 +252,6 @@ class Settings_Page {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'admin-menu-folder' ) );
 		}
 
-		// AMF デバッグ情報（HTMLソースコード内に出力）
-		$debug_raw_menu = array();
-		if ( isset( $GLOBALS['menu'] ) && is_array( $GLOBALS['menu'] ) ) {
-			foreach ( $GLOBALS['menu'] as $k => $v ) {
-				$debug_raw_menu[] = array(
-					'key'   => $k,
-					'slug'  => $v[2] ?? '',
-					'title' => wp_strip_all_tags( $v[0] ?? '' ),
-				);
-			}
-		}
-		echo "\n<!-- AMF_DEBUG_START\n";
-		echo "CURRENT_RAW_MENU:\n" . esc_html( wp_json_encode( $debug_raw_menu, JSON_PRETTY_PRINT ) ) . "\n\n";
-		echo "CUSTOM_MENU_ORDER_ACTIVE:\n" . ( apply_filters( 'custom_menu_order', false ) ? 'TRUE' : 'FALSE' ) . "\n";
-		echo "AMF_DEBUG_END -->\n";
-
 		$options         = $this->main->get_options();
 		$menu_folders    = $options['menu_folders'] ?? array();
 		$max_folders     = $this->main->get_max_folders();
@@ -479,7 +463,9 @@ class Settings_Page {
 			}
 		}
 
-		// 2. 現在の $menu から未選択項目を取得し、unset による前詰まりオフセットを自動計算・加算補正
+		$is_custom_menu_order = apply_filters( 'custom_menu_order', false );
+
+		// 2. 現在の $menu から未選択項目を取得 (custom_menu_order 有効時のみ前詰まりオフセット補正を適用)
 		foreach ( $raw_menu as $pos => $item ) {
 			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
 				continue;
@@ -496,14 +482,16 @@ class Settings_Page {
 
 			$calc_pos = (float) $pos;
 
-			// この未選択項目より前の位置に存在した選択済み(unset済み)項目の件数を連動オフセットとして補正
-			$offset = 0;
-			foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
-				if ( $sel_pos <= ( $calc_pos + $offset ) ) {
-					$offset++;
+			// キー連番前詰め環境 (custom_menu_order 有効) の場合のみオフセット補正を適用
+			if ( $is_custom_menu_order ) {
+				$offset = 0;
+				foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
+					if ( $sel_pos <= ( $calc_pos + $offset ) ) {
+						$offset++;
+					}
 				}
+				$calc_pos += $offset;
 			}
-			$calc_pos += $offset;
 
 			$items_by_position[] = array(
 				'slug'       => $slug,
