@@ -46,8 +46,8 @@ class Menu_Filter {
 	 */
 	public function __construct( Main $main ) {
 		$this->main = $main;
-		// 他の全メニューが登録された最終段階でメニューを再構築
-		add_action( 'admin_menu', array( $this, 'filter_admin_menu' ), 99999 );
+		// 他の全メニューが登録された最終段階（最大優先度）でメニューを再構築
+		add_action( 'admin_menu', array( $this, 'filter_admin_menu' ), PHP_INT_MAX );
 	}
 
 	/**
@@ -60,8 +60,8 @@ class Menu_Filter {
 			return;
 		}
 
-		// WordPressコアと同様にキー昇順でソート（実際のWPサイドメニュー順と完全一致させる）
-		ksort( $menu );
+		// WordPressコアと同様にキー数値昇順でソート（実際のWPサイドメニュー順と完全一致させる）
+		ksort( $menu, SORT_NUMERIC );
 
 		// 本プラグインが unset する直前の、全メニューの本来の表示順序 (0, 1, 2...) を記録
 		if ( empty( self::$original_menu_order ) ) {
