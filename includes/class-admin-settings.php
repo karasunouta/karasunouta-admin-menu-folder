@@ -248,8 +248,8 @@ class Settings_Page {
 		}
 
 		$options         = $this->main->get_options();
-		$menu_folders    = $options['menu_folders'] ?? array();
 		$max_folders     = $this->main->get_max_folders();
+		$menu_folders    = array_slice( $options['menu_folders'] ?? array(), 0, $max_folders );
 		$protected_slugs = $this->main->get_protected_slugs();
 
 		// 全フォルダーの選択済みメニュー項目を統合収集

@@ -154,6 +154,12 @@ class Main {
 
 		$options = wp_parse_args( $saved, $defaults );
 
+		// 許容最大フォルダー数 (get_max_folders()) を超えるフォルダーは切り詰め
+		$max_folders = $this->get_max_folders();
+		if ( ! empty( $options['menu_folders'] ) && is_array( $options['menu_folders'] ) ) {
+			$options['menu_folders'] = array_slice( $options['menu_folders'], 0, $max_folders );
+		}
+
 		// デフォルトでは第1フォルダーのタイトルを標準名 'Menu Folder' にセット
 		if ( ! empty( $options['menu_folders'][0] ) ) {
 			$options['menu_folders'][0]['title'] = 'Menu Folder';
@@ -192,7 +198,8 @@ class Main {
 	 * @return array
 	 */
 	public function get_raw_options(): array {
-		return $this->get_options();
+		$saved = get_option( self::OPTION_KEY, array() );
+		return is_array( $saved ) ? $saved : array();
 	}
 
 	/**
