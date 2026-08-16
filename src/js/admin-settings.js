@@ -367,7 +367,16 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 
 			const newRow = createSubitemRow(slug, title, url, position, iconClass);
-			insertRowSortedByPosition(sublist, newRow);
+
+			// フックでカスタム挿入処理（Pro版等は末尾追加）を適用。未登録ならデフォルトで位置順ソート挿入
+			const handled = (window.wp && window.wp.hooks)
+				? window.wp.hooks.applyFilters('adminMenuFolder.insertSubitemRow', false, sublist, newRow)
+				: false;
+
+			if (!handled) {
+				insertRowSortedByPosition(sublist, newRow);
+			}
+
 			itemRow.classList.add('is-selected');
 		} else {
 			const existingRows = foldersGrid.querySelectorAll(`.admin-menu-folder-subitem-row[data-slug="${slug}"]`);
