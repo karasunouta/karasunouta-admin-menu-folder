@@ -107,10 +107,11 @@ class Menu_Filter {
 			if ( 0 !== $folder_idx ) {
 				do_action( 'admin_menu_folder_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
-				// 第1フォルダーのタイトル・アイコン反映
+				// 第1フォルダーのタイトル・スラグ・アイコン反映（初期登録されたノードを先頭フォルダーの最新情報に同期）
 				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && $m_item[2] === $parent_slug ) {
+					if ( isset( $m_item[2] ) && ( $m_item[2] === $parent_slug || str_starts_with( $m_item[2], 'admin-menu-folder-' ) ) ) {
 						$menu[ $k ][0] = $folder_title;
+						$menu[ $k ][2] = $parent_slug;
 						$menu[ $k ][6] = $folder_icon;
 						break;
 					}
