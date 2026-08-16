@@ -21,23 +21,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // プラグイン定数
-define( 'AMF_VERSION', '1.2.1' );
-define( 'AMF_PLUGIN_FILE', __FILE__ );
-define( 'AMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'AMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'ADMIN_MENU_FOLDER_VERSION', '1.2.1' );
+define( 'ADMIN_MENU_FOLDER_PLUGIN_FILE', __FILE__ );
+define( 'ADMIN_MENU_FOLDER_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'ADMIN_MENU_FOLDER_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // 必要なクラスファイルの読み込み
-require_once AMF_PLUGIN_DIR . 'includes/class-main.php';
-require_once AMF_PLUGIN_DIR . 'includes/class-admin-settings.php';
-require_once AMF_PLUGIN_DIR . 'includes/class-admin-menu-filter.php';
+require_once ADMIN_MENU_FOLDER_PLUGIN_DIR . 'includes/class-main.php';
+require_once ADMIN_MENU_FOLDER_PLUGIN_DIR . 'includes/class-admin-settings.php';
+require_once ADMIN_MENU_FOLDER_PLUGIN_DIR . 'includes/class-admin-menu-filter.php';
 
 /**
  * プラグインのメインインスタンスを起動および翻訳ファイルの読み込み
  */
-function amf_init() {
+function admin_menu_folder_init() {
 	\karasunouta\AdminMenuFolder\Main::get_instance();
 }
-add_action( 'plugins_loaded', 'amf_init' );
+add_action( 'plugins_loaded', 'admin_menu_folder_init' );
 
 /**
  * プラグイン一覧画面の「設定」リンクを追加
@@ -45,7 +45,7 @@ add_action( 'plugins_loaded', 'amf_init' );
  * @param array $links 既存のリンク配列.
  * @return array
  */
-function amf_plugin_action_links( $links ) {
+function admin_menu_folder_plugin_action_links( $links ) {
 	$action_links = array(
 		'settings' => sprintf(
 			'<a href="%s">%s</a>',
@@ -55,5 +55,5 @@ function amf_plugin_action_links( $links ) {
 	);
 	return array_merge( $action_links, $links );
 }
-add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'amf_plugin_action_links' );
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'admin_menu_folder_plugin_action_links' );
 

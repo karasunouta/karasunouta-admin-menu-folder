@@ -81,7 +81,7 @@ class Main {
 		 *
 		 * @param bool $is_pro デフォルトは false
 		 */
-		return (bool) apply_filters( 'amf_is_pro', false );
+		return (bool) apply_filters( 'admin_menu_folder_is_pro', false );
 	}
 
 	/**
@@ -95,7 +95,7 @@ class Main {
 		 *
 		 * @param int $max_folders 通常版デフォルトは1
 		 */
-		return (int) apply_filters( 'amf_max_folders', 1 );
+		return (int) apply_filters( 'admin_menu_folder_max_folders', 1 );
 	}
 
 	/**
@@ -110,7 +110,7 @@ class Main {
 		 * @param int $max_items デフォルトは99件
 		 */
 		$default_max = 99;
-		return (int) apply_filters( 'amf_max_items', $default_max );
+		return (int) apply_filters( 'admin_menu_folder_max_items', $default_max );
 	}
 
 	/**
@@ -121,7 +121,7 @@ class Main {
 	 */
 	public function get_protected_slugs(): array {
 		$options   = $this->get_options();
-		$protected = array( 'admin-menu-folder', 'amf-folder' );
+		$protected = array( 'admin-menu-folder' );
 
 		if ( ! empty( $options['menu_folders'] ) && is_array( $options['menu_folders'] ) ) {
 			foreach ( $options['menu_folders'] as $folder ) {
@@ -130,9 +130,9 @@ class Main {
 
 				if ( ! empty( $slug ) ) {
 					$protected[] = $slug;
-					$protected[] = 'amf-folder-' . $slug;
+					$protected[] = 'admin-menu-folder-' . $slug;
 					if ( 'folder_default' !== $id ) {
-						$protected[] = 'amf-folder-' . $id;
+						$protected[] = 'admin-menu-folder-' . $id;
 					}
 				}
 			}
@@ -148,7 +148,7 @@ class Main {
 	 */
 	public function get_options(): array {
 		$defaults = array(
-			'version'             => AMF_VERSION,
+			'version'             => ADMIN_MENU_FOLDER_VERSION,
 			'show_admin_bar_link' => false,
 			'menu_folders'        => array(
 				array(
@@ -197,7 +197,7 @@ class Main {
 		 * @param array $options 設定配列.
 		 * @param array $saved DBから直接読み込んだ生の保存設定.
 		 */
-		return apply_filters( 'amf_get_options', $options, $saved );
+		return apply_filters( 'admin_menu_folder_get_options', $options, $saved );
 	}
 
 	/**
