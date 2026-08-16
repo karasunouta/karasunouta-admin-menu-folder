@@ -84,7 +84,7 @@ class Settings_Page {
 			$max_items       = $this->main->get_max_items();
 			$protected_slugs = $this->main->get_protected_slugs();
 
-			// フィルターフック経由でサニタイズ（Pro版有効時はPro版側が全フォルダーをサニタイズ処理）
+			// フィルターフック経由でサニタイズ（拡張アドオン側で全フォルダーをサニタイズ処理可能）
 			$sanitized_folders = apply_filters(
 				'admin_menu_folder_sanitize_folders_for_save',
 				null,

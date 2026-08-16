@@ -103,7 +103,7 @@ class Menu_Filter {
 			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$folder_items = $folder['menues'] ?? array();
 
-			// 第2フォルダー以降で親メニューがまだ未登録の場合、Pro版側のアクションフック経由で動的に追加登録
+			// 第2フォルダー以降で親メニューがまだ未登録の場合、拡張アドオンのアクションフック経由で動的に追加登録
 			if ( 0 !== $folder_idx ) {
 				do_action( 'admin_menu_folder_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
