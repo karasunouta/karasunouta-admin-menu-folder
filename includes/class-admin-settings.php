@@ -196,6 +196,10 @@ class Settings_Page {
 			$version = ADMIN_MENU_FOLDER_VERSION;
 		}
 
+		if ( ! in_array( 'wp-hooks', $deps, true ) ) {
+			$deps[] = 'wp-hooks';
+		}
+
 		// JSは全管理画面でEnqueue（親リンク href の書き換え・クリック補正のため）
 		wp_enqueue_script(
 			'admin-menu-folder-admin-settings-js',
@@ -209,20 +213,11 @@ class Settings_Page {
 			'admin-menu-folder-admin-settings-js',
 			'adminMenuFolderParams',
 			array(
-				'isPro'           => $this->main->is_pro(),
-				'maxFolders'      => $this->main->get_max_folders(),
 				'maxItems'        => $this->main->get_max_items(),
 				'nonce'           => wp_create_nonce( 'admin_menu_folder_save_settings_nonce' ),
 				'settingsUrl'     => admin_url( 'options-general.php?page=admin-menu-folder' ),
 				'protectedSlugs'  => $this->main->get_protected_slugs(),
-				'moveUp'          => __( 'Move Up', 'admin-menu-folder' ),
-				'moveDown'        => __( 'Move Down', 'admin-menu-folder' ),
-				'moveLeft'        => __( 'Move Left', 'admin-menu-folder' ),
-				'moveRight'       => __( 'Move Right', 'admin-menu-folder' ),
-				'editFolder'      => __( 'Edit Folder', 'admin-menu-folder' ),
-				'deleteFolder'    => __( 'Delete Folder', 'admin-menu-folder' ),
 				'removeItem'      => __( 'Remove Item', 'admin-menu-folder' ),
-				'confirmDelete'   => __( 'Are you sure you want to delete this folder? Stored menu items will be restored.', 'admin-menu-folder' ),
 				'confirmReset'    => __( 'Are you sure you want to reset Admin Menu Folder settings to default?', 'admin-menu-folder' ),
 				'limitMessage'    => sprintf(
 					/* translators: %d: Maximum allowed items */

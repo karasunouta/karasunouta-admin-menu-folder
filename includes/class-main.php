@@ -71,20 +71,6 @@ class Main {
 	}
 
 	/**
-	 * Pro版が有効か判定（フィルターフック対応）
-	 *
-	 * @return bool
-	 */
-	public function is_pro(): bool {
-		/**
-		 * Pro版の有効状態をフィルタリング
-		 *
-		 * @param bool $is_pro デフォルトは false
-		 */
-		return (bool) apply_filters( 'admin_menu_folder_is_pro', false );
-	}
-
-	/**
 	 * 作成可能な最大サブメニューフォルダー数を取得（フィルターフック対応）
 	 *
 	 * @return int

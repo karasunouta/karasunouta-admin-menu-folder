@@ -4,6 +4,49 @@ import '../css/admin-settings.css';
  * Admin Menu Folder - Admin Settings & Menu Link Helper (Vanilla JS)
  */
 
+/**
+ * HTML エスケープ helper
+ *
+ * @param {string} str エスケープ対象文字列
+ * @returns {string}
+ */
+export function escapeHtml(str) {
+	return String(str || '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+}
+
+/**
+ * アイコン HTML 生成 helper
+ *
+ * @param {string} iconClass アイコン指定文字列
+ * @returns {string}
+ */
+export function buildIconHtml(iconClass) {
+	if (!iconClass) {
+		return '<span class="dashicons dashicons-category"></span>';
+	}
+	if (iconClass.includes('dashicons-')) {
+		return `<span class="dashicons ${escapeHtml(iconClass)}"></span>`;
+	}
+	if (iconClass.includes('data:image') || iconClass.includes('http')) {
+		return `<img src="${escapeHtml(iconClass)}" alt="" class="admin-menu-folder-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />`;
+	}
+	if (iconClass.includes('svg')) {
+		return `<span class="admin-menu-folder-svg-icon" style="width:18px;height:18px;display:inline-flex;">${iconClass}</span>`;
+	}
+	return '<span class="dashicons dashicons-category"></span>';
+}
+
+// 拡張アドオン向けに共通ユーティリティを公開
+window.adminMenuFolderUtils = {
+	escapeHtml,
+	buildIconHtml
+};
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	/**
@@ -11,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	 */
 	function cleanUrlQuery() {
 		if (window.history && window.history.replaceState) {
-			let search = window.location.search;
+			const search = window.location.search;
 			if (search.includes('admin_menu_folder_updated=true') || search.includes('admin_menu_folder_reset=true')) {
 				const cleanSearch = search.replace(/([\?&])admin_menu_folder_updated=true(&|$)/, '$1').replace(/([\?&])admin_menu_folder_reset=true(&|$)/, '$1').replace(/[\?&]$/, '');
 				const cleanUrl = window.location.pathname + cleanSearch + window.location.hash;
@@ -48,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	// ----------------------------------------------------------------------
 	// 共通UIイベント: 左側擬似メニューの行全体クリックでチェックボックス切替
-	// （通常版・Pro版共通で動作し、各環境の change リスナーを連動発火）
 	// ----------------------------------------------------------------------
 	pseudoList.addEventListener('click', function (e) {
 		const itemRow = e.target.closest('.admin-menu-folder-pseudo-menu-item');
@@ -64,15 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 
-	const isPro = typeof adminMenuFolderParams !== 'undefined' ? Boolean(adminMenuFolderParams.isPro) : false;
 	const maxItems = typeof adminMenuFolderParams !== 'undefined' ? parseInt(adminMenuFolderParams.maxItems, 10) : 99;
 	const limitMessage = typeof adminMenuFolderParams !== 'undefined' ? adminMenuFolderParams.limitMessage : 'Maximum items limit reached.';
 	const protectedSlugs = (typeof adminMenuFolderParams !== 'undefined' && Array.isArray(adminMenuFolderParams.protectedSlugs)) ? adminMenuFolderParams.protectedSlugs : ['admin-menu-folder-default', 'admin-menu-folder'];
-
-	// Pro版が有効な場合は Pro版の JS が上位互換としてフォルダー管理ロジックを担当するため早期リターン
-	if (isPro) {
-		return;
-	}
 
 	/**
 	 * 隠しフィールド (JSON) とUI状態の同期
@@ -83,9 +119,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			const sublist = firstCard.querySelector('.admin-menu-folder-folder-sublist');
 			updateEmptyNotice(sublist);
 		}
-		updateButtonStates();
 		updateHiddenFieldValue();
 		syncPseudoMenuCheckboxes();
+
+		// 拡張フック（状態同期の完了を通知）
+		if (window.wp && window.wp.hooks) {
+			window.wp.hooks.doAction('adminMenuFolder.afterSyncState', foldersGrid, hiddenInput);
+		}
 	}
 
 	/**
@@ -150,6 +190,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * 元のWPポジション順 (data-position 昇順) に従って行要素を挿入
 	 */
 	function insertRowSortedByPosition(sublist, newRow) {
+		// フックでカスタム挿入処理が行われた場合はスキップ
+		if (window.wp && window.wp.hooks) {
+			const handled = window.wp.hooks.applyFilters('adminMenuFolder.customInsertRow', false, sublist, newRow);
+			if (handled) return;
+		}
+
 		const newPos = parseFloat(newRow.getAttribute('data-position')) || 999.0;
 		const existingRows = Array.from(sublist.querySelectorAll('.admin-menu-folder-subitem-row'));
 		let inserted = false;
@@ -205,67 +251,27 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		});
 
-		hiddenInput.value = JSON.stringify([{
+		let jsonPayload = [{
 			id: folderId,
 			title: folderTitle,
 			icon: folderIcon,
 			position: 99,
 			menues: menuesData
-		}]);
-	}
+		}];
 
-	/**
-	 * カード内の上下移動ボタン有効/無効を更新
-	 */
-	function updateButtonStates() {
-		const firstCard = foldersGrid.querySelector('.admin-menu-folder-folder-card');
-		if (!firstCard) return;
+		// 拡張フック（複数フォルダー対応等のアドオンがJSONデータをフィルタリング可能）
+		if (window.wp && window.wp.hooks) {
+			jsonPayload = window.wp.hooks.applyFilters('adminMenuFolder.foldersJsonPayload', jsonPayload, foldersGrid);
+		}
 
-		const subitemRows = firstCard.querySelectorAll('.admin-menu-folder-subitem-row');
-		subitemRows.forEach(function (row, iIndex) {
-			const btnUp = row.querySelector('.admin-menu-folder-move-up');
-			const btnDown = row.querySelector('.admin-menu-folder-move-down');
-			if (btnUp) btnUp.disabled = (iIndex === 0);
-			if (btnDown) btnDown.disabled = (iIndex === subitemRows.length - 1);
-		});
-	}
-
-	/**
-	 * アイコンHTML生成 helper
-	 */
-	function buildIconHtml(iconClass) {
-		if (!iconClass) {
-			return '<span class="dashicons dashicons-category"></span>';
-		}
-		if (iconClass.includes('dashicons-')) {
-			return `<span class="dashicons ${escapeHtml(iconClass)}"></span>`;
-		}
-		if (iconClass.includes('data:image') || iconClass.includes('http')) {
-			return `<img src="${escapeHtml(iconClass)}" alt="" class="admin-menu-folder-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />`;
-		}
-		if (iconClass.includes('svg')) {
-			return `<span class="admin-menu-folder-svg-icon" style="width:18px;height:18px;display:inline-flex;">${iconClass}</span>`;
-		}
-		return '<span class="dashicons dashicons-category"></span>';
-	}
-
-	/**
-	 * エスケープ helper
-	 */
-	function escapeHtml(str) {
-		return String(str || '')
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#039;');
+		hiddenInput.value = JSON.stringify(jsonPayload);
 	}
 
 	/**
 	 * サブアイテム行DOM要素の生成
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
-		const removeText = adminMenuFolderParams.removeItem || 'Remove Item';
+		const removeText = (typeof adminMenuFolderParams !== 'undefined' && adminMenuFolderParams.removeItem) ? adminMenuFolderParams.removeItem : 'Remove Item';
 
 		const li = document.createElement('li');
 		li.className = 'admin-menu-folder-subitem-row';
@@ -275,18 +281,21 @@ document.addEventListener('DOMContentLoaded', function () {
 		li.setAttribute('data-position', position || '999');
 		li.setAttribute('data-icon-class', iconClass || '');
 
-		let reorderBtnsHtml = '';
-		if (typeof adminMenuFolderProParams !== 'undefined' && adminMenuFolderProParams) {
-			const moveUpText = adminMenuFolderProParams.moveUp || 'Move Up';
-			const moveDownText = adminMenuFolderProParams.moveDown || 'Move Down';
-			reorderBtnsHtml = `
-				<button type="button" class="button button-small admin-menu-folder-move-up" title="${escapeHtml(moveUpText)}">
-					<span class="dashicons dashicons-arrow-up-alt2"></span>
-				</button>
-				<button type="button" class="button button-small admin-menu-folder-move-down" title="${escapeHtml(moveDownText)}">
-					<span class="dashicons dashicons-arrow-down-alt2"></span>
-				</button>
-			`;
+		let actionsHtml = `
+			<button type="button" class="button button-small admin-menu-folder-item-remove-btn" title="${escapeHtml(removeText)}">
+				<span class="dashicons dashicons-no-alt"></span>
+			</button>
+		`;
+
+		// 拡張フック（アドオンが並び替えボタン等を差し込めるようにする）
+		if (window.wp && window.wp.hooks) {
+			actionsHtml = window.wp.hooks.applyFilters('adminMenuFolder.subitemActionButtons', actionsHtml, {
+				slug,
+				title,
+				url,
+				position,
+				iconClass
+			});
 		}
 
 		li.innerHTML = `
@@ -295,10 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				<span>${escapeHtml(title)}</span>
 			</div>
 			<div class="admin-menu-folder-subitem-actions">
-				${reorderBtnsHtml}
-				<button type="button" class="button button-small admin-menu-folder-item-remove-btn" title="${escapeHtml(removeText)}">
-					<span class="dashicons dashicons-no-alt"></span>
-				</button>
+				${actionsHtml}
 			</div>
 		`;
 
@@ -306,13 +312,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	// ----------------------------------------------------------------------
-	// イベント処理: 単一フォルダーカード内操作 (解約・上下並び替え)
+	// イベント処理: 単一フォルダーカード内操作 (アイテム削除)
 	// ----------------------------------------------------------------------
 	foldersGrid.addEventListener('click', function (e) {
 		const card = e.target.closest('.admin-menu-folder-folder-card');
 		if (!card) return;
 
-		// 1. サブアイテムの解約（「✕」ボタン）
+		// サブアイテムの削除（「✕」ボタン）
 		const itemRemoveBtn = e.target.closest('.admin-menu-folder-item-remove-btn');
 		if (itemRemoveBtn) {
 			const subitemRow = itemRemoveBtn.closest('.admin-menu-folder-subitem-row');
@@ -320,29 +326,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				subitemRow.remove();
 				syncState();
 			}
-			return;
-		}
-
-		// 2. サブアイテムの上下並び替え
-		const btnUp = e.target.closest('.admin-menu-folder-move-up');
-		const btnDown = e.target.closest('.admin-menu-folder-move-down');
-		if (btnUp && !btnUp.disabled) {
-			const currentRow = btnUp.closest('.admin-menu-folder-subitem-row');
-			const prevRow = currentRow.previousElementSibling;
-			if (prevRow) {
-				currentRow.parentNode.insertBefore(currentRow, prevRow);
-				syncState();
-			}
-			return;
-		}
-		if (btnDown && !btnDown.disabled) {
-			const currentRow = btnDown.closest('.admin-menu-folder-subitem-row');
-			const nextRow = currentRow.nextElementSibling;
-			if (nextRow) {
-				currentRow.parentNode.insertBefore(nextRow, currentRow);
-				syncState();
-			}
-			return;
 		}
 	});
 
@@ -367,13 +350,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			return;
 		}
 
-		const firstCard = foldersGrid.querySelector('.admin-menu-folder-folder-card');
-		if (!firstCard) {
+		const targetCard = foldersGrid.querySelector('.admin-menu-folder-folder-card.is-active') || foldersGrid.querySelector('.admin-menu-folder-folder-card');
+		if (!targetCard) {
 			toggle.checked = false;
 			return;
 		}
 
-		const sublist = firstCard.querySelector('.admin-menu-folder-folder-sublist');
+		const sublist = targetCard.querySelector('.admin-menu-folder-folder-sublist');
 
 		if (toggle.checked) {
 			const currentCount = sublist.querySelectorAll('.admin-menu-folder-subitem-row').length;
@@ -387,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			insertRowSortedByPosition(sublist, newRow);
 			itemRow.classList.add('is-selected');
 		} else {
-			const existingRows = firstCard.querySelectorAll(`.admin-menu-folder-subitem-row[data-slug="${slug}"]`);
+			const existingRows = foldersGrid.querySelectorAll(`.admin-menu-folder-subitem-row[data-slug="${slug}"]`);
 			existingRows.forEach(r => r.remove());
 			itemRow.classList.remove('is-selected');
 		}
@@ -398,4 +381,3 @@ document.addEventListener('DOMContentLoaded', function () {
 	// 初期状態同期
 	syncState();
 });
-
