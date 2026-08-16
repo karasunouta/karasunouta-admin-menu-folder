@@ -461,6 +461,7 @@ class Settings_Page {
 			}
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Checking WordPress core filter "custom_menu_order".
 		$is_custom_menu_order = apply_filters( 'custom_menu_order', false );
 
 		// 2. 現在の $menu から未選択項目を取得 (custom_menu_order 有効時のみ前詰まりオフセット補正を適用)
