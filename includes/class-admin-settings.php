@@ -49,12 +49,14 @@ class Settings_Page {
 			array( $this, 'render_settings_page' )
 		);
 
-		// トップレベル「Menu Folder」フォルダメニューを追加 (最下部付近 9999)
+		// トップレベル「Menu Folder」フォルダメニューを追加
+		// ※初期IDを動的タイムスタンプにするとDB未保存の初期状態でリクエストごとにID・URLが変動するため、
+		// 固定識別子 'folder_default' を使用し、スラグを 'admin-menu-folder-folder_default' に統一。
 		add_menu_page(
 			__( 'Menu Folder', 'admin-menu-folder' ),
 			__( 'Menu Folder', 'admin-menu-folder' ),
 			'manage_options',
-			'admin-menu-folder-default',
+			'admin-menu-folder-folder_default',
 			'__return_null',
 			'dashicons-category',
 			9999
@@ -135,6 +137,7 @@ class Settings_Page {
 			if ( empty( $sanitized_folders ) ) {
 				$sanitized_folders = array(
 					array(
+						// 初期IDの固定識別子 'folder_default'
 						'id'       => 'folder_default',
 						'title'    => 'Menu Folder',
 						'icon'     => 'dashicons-category',
@@ -320,7 +323,7 @@ class Settings_Page {
 									$position              = $item['position'];
 									$is_checked            = in_array( $slug, $selected_slugs, true );
 									$is_disabled           = in_array( $slug, $protected_slugs, true ) || ! empty( $item['is_folder'] ) || str_starts_with( $slug, 'admin-menu-folder-' );
-									$is_active_folder_item = $is_disabled && ( 'admin-menu-folder-default' === $slug || 'folder_default' === $slug );
+									$is_active_folder_item = $is_disabled && ( 'admin-menu-folder-folder_default' === $slug || 'folder_default' === $slug );
 									?>
 									<li class="admin-menu-folder-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?> <?php echo $is_active_folder_item ? 'is-selected-folder-active' : ''; ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
@@ -466,7 +469,12 @@ class Settings_Page {
 				continue;
 			}
 
-			$slug        = $item[2];
+			$slug = $item[2];
+
+			// フォルダーメニュー項目（admin-menu-folder- で始まるもの）はステップ3で末尾に一括マージするためスキップ
+			if ( str_starts_with( $slug, 'admin-menu-folder-' ) || 'admin-menu-folder' === $slug ) {
+				continue;
+			}
 			$clean_title = trim( preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $item[0] ) );
 			$icon_class  = $item[6] ?? 'dashicons-admin-generic';
 

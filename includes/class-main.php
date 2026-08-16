@@ -117,9 +117,7 @@ class Main {
 				if ( ! empty( $slug ) ) {
 					$protected[] = $slug;
 					$protected[] = 'admin-menu-folder-' . $slug;
-					if ( 'folder_default' !== $id ) {
-						$protected[] = 'admin-menu-folder-' . $id;
-					}
+					$protected[] = 'admin-menu-folder-' . $id;
 				}
 			}
 		}
@@ -138,6 +136,8 @@ class Main {
 			'show_admin_bar_link' => false,
 			'menu_folders'        => array(
 				array(
+					// ※初期IDを動的タイムスタンプにすると、DB未保存の初期状態でリクエストごとにID・URLが変化してしまうため、
+					// デフォルト値として固定識別子 'folder_default' を定義（プログラム上は他のPro版追加IDと完全に対等に扱われます）。
 					'id'       => 'folder_default',
 					'title'    => 'Menu Folder',
 					'icon'     => 'dashicons-category',

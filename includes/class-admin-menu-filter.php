@@ -107,9 +107,9 @@ class Menu_Filter {
 			if ( 0 !== $folder_idx ) {
 				do_action( 'admin_menu_folder_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
-				// デフォルトフォルダーのタイトル・アイコン反映
+				// 第1フォルダーのタイトル・アイコン反映
 				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && ( $m_item[2] === $parent_slug || 'admin-menu-folder-default' === $m_item[2] ) ) {
+					if ( isset( $m_item[2] ) && $m_item[2] === $parent_slug ) {
 						$menu[ $k ][0] = $folder_title;
 						$menu[ $k ][6] = $folder_icon;
 						break;

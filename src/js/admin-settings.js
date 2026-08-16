@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	const maxItems = typeof adminMenuFolderParams !== 'undefined' ? parseInt(adminMenuFolderParams.maxItems, 10) : 99;
 	const limitMessage = typeof adminMenuFolderParams !== 'undefined' ? adminMenuFolderParams.limitMessage : 'Maximum items limit reached.';
-	const protectedSlugs = (typeof adminMenuFolderParams !== 'undefined' && Array.isArray(adminMenuFolderParams.protectedSlugs)) ? adminMenuFolderParams.protectedSlugs : ['admin-menu-folder-default', 'admin-menu-folder'];
+	const protectedSlugs = (typeof adminMenuFolderParams !== 'undefined' && Array.isArray(adminMenuFolderParams.protectedSlugs)) ? adminMenuFolderParams.protectedSlugs : ['admin-menu-folder-folder_default', 'admin-menu-folder'];
 
 	/**
 	 * 隠しフィールド (JSON) とUI状態の同期
