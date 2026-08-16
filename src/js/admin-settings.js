@@ -46,12 +46,30 @@ document.addEventListener('DOMContentLoaded', function () {
 		return;
 	}
 
+	// ----------------------------------------------------------------------
+	// 共通UIイベント: 左側擬似メニューの行全体クリックでチェックボックス切替
+	// （通常版・Pro版共通で動作し、各環境の change リスナーを連動発火）
+	// ----------------------------------------------------------------------
+	pseudoList.addEventListener('click', function (e) {
+		const itemRow = e.target.closest('.admin-menu-folder-pseudo-menu-item');
+		if (!itemRow || itemRow.classList.contains('is-disabled')) return;
+
+		// チェックボックス自体をクリックした場合は change イベントが自然発火するので二重発火を防止
+		if (e.target.tagName && e.target.tagName.toLowerCase() === 'input') return;
+
+		const checkbox = itemRow.querySelector('.admin-menu-folder-item-toggle');
+		if (checkbox && !checkbox.disabled) {
+			checkbox.checked = !checkbox.checked;
+			checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+	});
+
 	const isPro = typeof adminMenuFolderParams !== 'undefined' ? Boolean(adminMenuFolderParams.isPro) : false;
 	const maxItems = typeof adminMenuFolderParams !== 'undefined' ? parseInt(adminMenuFolderParams.maxItems, 10) : 99;
 	const limitMessage = typeof adminMenuFolderParams !== 'undefined' ? adminMenuFolderParams.limitMessage : 'Maximum items limit reached.';
 	const protectedSlugs = (typeof adminMenuFolderParams !== 'undefined' && Array.isArray(adminMenuFolderParams.protectedSlugs)) ? adminMenuFolderParams.protectedSlugs : ['admin-menu-folder-default', 'admin-menu-folder'];
 
-	// Pro版が有効な場合は Pro版の JS が上位互換として制御を担当するため早期リターン
+	// Pro版が有効な場合は Pro版の JS が上位互換としてフォルダー管理ロジックを担当するため早期リターン
 	if (isPro) {
 		return;
 	}
@@ -375,23 +393,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		syncState();
-	});
-
-	// ----------------------------------------------------------------------
-	// イベント処理: 左側擬似メニューの行全体クリックでチェックボックス切替
-	// ----------------------------------------------------------------------
-	pseudoList.addEventListener('click', function (e) {
-		const itemRow = e.target.closest('.admin-menu-folder-pseudo-menu-item');
-		if (!itemRow || itemRow.classList.contains('is-disabled')) return;
-
-		// チェックボックス自体をクリックした場合は change イベントが自然発火するので二重発火を防止
-		if (e.target.tagName && e.target.tagName.toLowerCase() === 'input') return;
-
-		const checkbox = itemRow.querySelector('.admin-menu-folder-item-toggle');
-		if (checkbox && !checkbox.disabled) {
-			checkbox.checked = !checkbox.checked;
-			checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-		}
 	});
 
 	// 初期状態同期
