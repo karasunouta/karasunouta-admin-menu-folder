@@ -2,7 +2,7 @@
 /**
  * AdminMenuFolder Main Class
  *
- * @package AdminMenuFolder
+ * @package KarasunoutaAdminMenuFolder
  */
 
 namespace karasunouta\AdminMenuFolder;
@@ -19,7 +19,7 @@ class Main {
 	/**
 	 * オプションキー名
 	 */
-	public const OPTION_KEY = 'admin_menu_folder_options';
+	public const OPTION_KEY = 'kamf_options';
 
 	/**
 	 * シングルトンインスタンス
@@ -81,7 +81,7 @@ class Main {
 		 *
 		 * @param int $max_folders 通常版デフォルトは1
 		 */
-		return (int) apply_filters( 'admin_menu_folder_max_folders', 1 );
+		return (int) apply_filters( 'kamf_max_folders', 1 );
 	}
 
 	/**
@@ -96,7 +96,7 @@ class Main {
 		 * @param int $max_items デフォルトは99件
 		 */
 		$default_max = 99;
-		return (int) apply_filters( 'admin_menu_folder_max_items', $default_max );
+		return (int) apply_filters( 'kamf_max_items', $default_max );
 	}
 
 	/**
@@ -107,7 +107,7 @@ class Main {
 	 */
 	public function get_protected_slugs(): array {
 		$options   = $this->get_options();
-		$protected = array( 'admin-menu-folder' );
+		$protected = array( 'karasunouta-admin-menu-folder', 'kamf-folder-default' );
 
 		if ( ! empty( $options['menu_folders'] ) && is_array( $options['menu_folders'] ) ) {
 			foreach ( $options['menu_folders'] as $folder ) {
@@ -116,8 +116,8 @@ class Main {
 
 				if ( ! empty( $slug ) ) {
 					$protected[] = $slug;
-					$protected[] = 'admin-menu-folder-' . $slug;
-					$protected[] = 'admin-menu-folder-' . $id;
+					$protected[] = 'kamf-' . $slug;
+					$protected[] = 'kamf-' . $id;
 				}
 			}
 		}
@@ -132,13 +132,13 @@ class Main {
 	 */
 	public function get_options(): array {
 		$defaults = array(
-			'version'             => ADMIN_MENU_FOLDER_VERSION,
+			'version'             => KAMF_VERSION,
 			'show_admin_bar_link' => false,
 			'menu_folders'        => array(
 				array(
 					// ※初期IDを動的タイムスタンプにすると、DB未保存の初期状態でリクエストごとにID・URLが変化してしまうため、
-					// デフォルト値として固定識別子 'folder_default' を定義（プログラム上は他のPro版追加IDと完全に対等に扱われます）。
-					'id'       => 'folder_default',
+					// デフォルト値として固定識別子 'folder-default' を定義（プログラム上は他のPro版追加IDと完全に対等に扱われます）。
+					'id'       => 'folder-default',
 					'title'    => 'Menu Folder',
 					'icon'     => 'dashicons-category',
 					'position' => 99,
@@ -189,7 +189,7 @@ class Main {
 		 * @param array $options 設定配列.
 		 * @param array $saved DBから直接読み込んだ生の保存設定.
 		 */
-		return apply_filters( 'admin_menu_folder_get_options', $options, $saved );
+		return apply_filters( 'kamf_get_options', $options, $saved );
 	}
 
 	/**
@@ -238,12 +238,12 @@ class Main {
 
 		$wp_admin_bar->add_node(
 			array(
-				'id'    => 'admin-menu-folder',
+				'id'    => 'kamf-admin-bar-link',
 				'title' => sprintf(
 					'<span class="ab-icon dashicons dashicons-category" style="top:2px;"></span><span class="ab-label">%s</span>',
-					esc_html__( 'Admin Menu Folder', 'admin-menu-folder' )
+					esc_html__( 'Admin Menu Folder', 'karasunouta-admin-menu-folder' )
 				),
-				'href'  => admin_url( 'options-general.php?page=admin-menu-folder' ),
+				'href'  => admin_url( 'options-general.php?page=karasunouta-admin-menu-folder' ),
 			)
 		);
 	}

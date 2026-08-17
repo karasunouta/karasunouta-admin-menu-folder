@@ -1,7 +1,7 @@
 import '../css/admin-settings.css';
 
 /**
- * Admin Menu Folder - Admin Settings & Menu Link Helper (Vanilla JS)
+ * Karasunouta Admin Menu Folder - Admin Settings & Menu Link Helper (Vanilla JS)
  */
 
 /**
@@ -33,16 +33,16 @@ export function buildIconHtml(iconClass) {
 		return `<span class="dashicons ${escapeHtml(iconClass)}"></span>`;
 	}
 	if (iconClass.includes('data:image') || iconClass.includes('http')) {
-		return `<img src="${escapeHtml(iconClass)}" alt="" class="admin-menu-folder-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />`;
+		return `<img src="${escapeHtml(iconClass)}" alt="" class="kamf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />`;
 	}
 	if (iconClass.includes('svg')) {
-		return `<span class="admin-menu-folder-svg-icon" style="width:18px;height:18px;display:inline-flex;">${iconClass}</span>`;
+		return `<span class="kamf-svg-icon" style="width:18px;height:18px;display:inline-flex;">${iconClass}</span>`;
 	}
 	return '<span class="dashicons dashicons-category"></span>';
 }
 
 // 拡張アドオン向けに共通ユーティリティを公開
-window.adminMenuFolderUtils = {
+window.kamfUtils = {
 	escapeHtml,
 	buildIconHtml
 };
@@ -50,13 +50,13 @@ window.adminMenuFolderUtils = {
 document.addEventListener('DOMContentLoaded', function () {
 
 	/**
-	 * URLから admin_menu_folder_updated=true および admin_menu_folder_reset=true を静かに消去（F5時の重複メッセージ表示防止）
+	 * URLから kamf_updated=true および kamf_reset=true を静かに消去（F5時の重複メッセージ表示防止）
 	 */
 	function cleanUrlQuery() {
 		if (window.history && window.history.replaceState) {
 			const search = window.location.search;
-			if (search.includes('admin_menu_folder_updated=true') || search.includes('admin_menu_folder_reset=true')) {
-				const cleanSearch = search.replace(/([\?&])admin_menu_folder_updated=true(&|$)/, '$1').replace(/([\?&])admin_menu_folder_reset=true(&|$)/, '$1').replace(/[\?&]$/, '');
+			if (search.includes('kamf_updated=true') || search.includes('kamf_reset=true')) {
+				const cleanSearch = search.replace(/([\?&])kamf_updated=true(&|$)/, '$1').replace(/([\?&])kamf_reset=true(&|$)/, '$1').replace(/[\?&]$/, '');
 				const cleanUrl = window.location.pathname + cleanSearch + window.location.hash;
 				window.history.replaceState({}, document.title, cleanUrl);
 			}
@@ -65,13 +65,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	cleanUrlQuery();
 
-	const resetBtn = document.getElementById('admin-menu-folder-reset-settings-btn');
-	const resetForm = document.getElementById('admin-menu-folder-reset-form');
+	const resetBtn = document.getElementById('kamf-reset-settings-btn');
+	const resetForm = document.getElementById('kamf-reset-form');
 	if (resetBtn && resetForm) {
 		resetBtn.addEventListener('click', function () {
-			const confirmMsg = (typeof adminMenuFolderParams !== 'undefined' && adminMenuFolderParams.confirmReset)
-				? adminMenuFolderParams.confirmReset
-				: 'Are you sure you want to reset Admin Menu Folder settings to default?';
+			const confirmMsg = (typeof kamfParams !== 'undefined' && kamfParams.confirmReset)
+				? kamfParams.confirmReset
+				: 'Are you sure you want to reset Karasunouta Admin Menu Folder settings to default?';
 			if (confirm(confirmMsg)) {
 				resetForm.submit();
 			}
@@ -81,9 +81,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	// ----------------------------------------------------------------------
 	// 設定画面内UIの操作ロジック (1フォルダー構造対応)
 	// ----------------------------------------------------------------------
-	const pseudoList = document.querySelector('.admin-menu-folder-pseudo-menu-list');
-	const foldersGrid = document.getElementById('admin-menu-folder-folders-grid');
-	const hiddenInput = document.getElementById('admin_menu_folder_folders_json');
+	const pseudoList = document.querySelector('.kamf-pseudo-menu-list');
+	const foldersGrid = document.getElementById('kamf-folders-grid');
+	const hiddenInput = document.getElementById('kamf_folders_json');
 
 	if (!pseudoList || !foldersGrid || !hiddenInput) {
 		return;
@@ -93,30 +93,30 @@ document.addEventListener('DOMContentLoaded', function () {
 	// 共通UIイベント: 左側擬似メニューの行全体クリックでチェックボックス切替
 	// ----------------------------------------------------------------------
 	pseudoList.addEventListener('click', function (e) {
-		const itemRow = e.target.closest('.admin-menu-folder-pseudo-menu-item');
+		const itemRow = e.target.closest('.kamf-pseudo-menu-item');
 		if (!itemRow || itemRow.classList.contains('is-disabled')) return;
 
 		// チェックボックス自体をクリックした場合は change イベントが自然発火するので二重発火を防止
 		if (e.target.tagName && e.target.tagName.toLowerCase() === 'input') return;
 
-		const checkbox = itemRow.querySelector('.admin-menu-folder-item-toggle');
+		const checkbox = itemRow.querySelector('.kamf-item-toggle');
 		if (checkbox && !checkbox.disabled) {
 			checkbox.checked = !checkbox.checked;
 			checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 		}
 	});
 
-	const maxItems = typeof adminMenuFolderParams !== 'undefined' ? parseInt(adminMenuFolderParams.maxItems, 10) : 99;
-	const limitMessage = typeof adminMenuFolderParams !== 'undefined' ? adminMenuFolderParams.limitMessage : 'Maximum items limit reached.';
-	const protectedSlugs = (typeof adminMenuFolderParams !== 'undefined' && Array.isArray(adminMenuFolderParams.protectedSlugs)) ? adminMenuFolderParams.protectedSlugs : ['admin-menu-folder-folder_default', 'admin-menu-folder'];
+	const maxItems = typeof kamfParams !== 'undefined' ? parseInt(kamfParams.maxItems, 10) : 99;
+	const limitMessage = typeof kamfParams !== 'undefined' ? kamfParams.limitMessage : 'Maximum items limit reached.';
+	const protectedSlugs = (typeof kamfParams !== 'undefined' && Array.isArray(kamfParams.protectedSlugs)) ? kamfParams.protectedSlugs : ['kamf-folder-default', 'karasunouta-admin-menu-folder'];
 
 	/**
 	 * 隠しフィールド (JSON) とUI状態の同期
 	 */
 	function syncState() {
-		const firstCard = foldersGrid.querySelector('.admin-menu-folder-folder-card');
+		const firstCard = foldersGrid.querySelector('.kamf-folder-card');
 		if (firstCard) {
-			const sublist = firstCard.querySelector('.admin-menu-folder-folder-sublist');
+			const sublist = firstCard.querySelector('.kamf-folder-sublist');
 			updateEmptyNotice(sublist);
 		}
 		updateHiddenFieldValue();
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		// 拡張フック（状態同期の完了を通知）
 		if (window.wp && window.wp.hooks) {
-			window.wp.hooks.doAction('adminMenuFolder.afterSyncState', foldersGrid, hiddenInput);
+			window.wp.hooks.doAction('kamf.afterSyncState', foldersGrid, hiddenInput);
 		}
 	}
 
@@ -133,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	 */
 	function updateEmptyNotice(sublist) {
 		if (!sublist) return;
-		const rows = sublist.querySelectorAll('.admin-menu-folder-subitem-row');
-		const emptyNotice = sublist.querySelector('.admin-menu-folder-empty-notice');
+		const rows = sublist.querySelectorAll('.kamf-subitem-row');
+		const emptyNotice = sublist.querySelector('.kamf-empty-notice');
 
 		if (rows.length > 0) {
 			if (emptyNotice) {
@@ -143,8 +143,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		} else {
 			if (!emptyNotice) {
 				const emptyLi = document.createElement('li');
-				emptyLi.className = 'admin-menu-folder-empty-notice';
-				emptyLi.textContent = (typeof adminMenuFolderParams !== 'undefined' && adminMenuFolderParams.noItemsSelected) ? adminMenuFolderParams.noItemsSelected : 'No menu items selected';
+				emptyLi.className = 'kamf-empty-notice';
+				emptyLi.textContent = (typeof kamfParams !== 'undefined' && kamfParams.noItemsSelected) ? kamfParams.noItemsSelected : 'No menu items selected';
 				sublist.appendChild(emptyLi);
 			}
 		}
@@ -154,21 +154,21 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * 擬似サイドメニューのチェックボックス状態およびアクティブ表示を現在のフォルダーと同期
 	 */
 	function syncPseudoMenuCheckboxes() {
-		const firstCard = foldersGrid.querySelector('.admin-menu-folder-folder-card');
+		const firstCard = foldersGrid.querySelector('.kamf-folder-card');
 		if (!firstCard) return;
 
-		const activeFolderId = firstCard.getAttribute('data-folder-id') || 'folder_default';
-		const allSubitemRows = firstCard.querySelectorAll('.admin-menu-folder-subitem-row');
+		const activeFolderId = firstCard.getAttribute('data-folder-id') || 'folder-default';
+		const allSubitemRows = firstCard.querySelectorAll('.kamf-subitem-row');
 		const storedSlugs = new Set();
 		allSubitemRows.forEach(row => storedSlugs.add(row.getAttribute('data-slug')));
 
-		const pseudoItems = pseudoList.querySelectorAll('.admin-menu-folder-pseudo-menu-item');
+		const pseudoItems = pseudoList.querySelectorAll('.kamf-pseudo-menu-item');
 		pseudoItems.forEach(item => {
 			const slug = item.getAttribute('data-slug');
-			const checkbox = item.querySelector('.admin-menu-folder-item-toggle');
+			const checkbox = item.querySelector('.kamf-item-toggle');
 
-			// アクティブフォルダー項目のハイライト制御 (admin-menu-folder-default 等)
-			if (slug === 'admin-menu-folder-default' || slug === 'folder_default' || slug === activeFolderId || slug === ('admin-menu-folder-' + activeFolderId)) {
+			// アクティブフォルダー項目のハイライト制御 (kamf-folder-default 等)
+			if (slug === 'kamf-folder-default' || slug === 'folder-default' || slug === activeFolderId || slug === ('kamf-' + activeFolderId)) {
 				item.classList.add('is-selected-folder-active');
 			} else {
 				item.classList.remove('is-selected-folder-active');
@@ -192,12 +192,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	function insertRowSortedByPosition(sublist, newRow) {
 		// フックでカスタム挿入処理が行われた場合はスキップ
 		if (window.wp && window.wp.hooks) {
-			const handled = window.wp.hooks.applyFilters('adminMenuFolder.customInsertRow', false, sublist, newRow);
+			const handled = window.wp.hooks.applyFilters('kamf.customInsertRow', false, sublist, newRow);
 			if (handled) return;
 		}
 
 		const newPos = parseFloat(newRow.getAttribute('data-position')) || 999.0;
-		const existingRows = Array.from(sublist.querySelectorAll('.admin-menu-folder-subitem-row'));
+		const existingRows = Array.from(sublist.querySelectorAll('.kamf-subitem-row'));
 		let inserted = false;
 
 		for (let i = 0; i < existingRows.length; i++) {
@@ -218,15 +218,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * 1フォルダー目からJSON構造をビルドして隠しフィールドに格納
 	 */
 	function updateHiddenFieldValue() {
-		const firstCard = foldersGrid.querySelector('.admin-menu-folder-folder-card');
+		const firstCard = foldersGrid.querySelector('.kamf-folder-card');
 		if (!firstCard) return;
 
-		const folderId = firstCard.getAttribute('data-folder-id') || 'folder_default';
-		const titleEl = firstCard.querySelector('.admin-menu-folder-folder-title');
+		const folderId = firstCard.getAttribute('data-folder-id') || 'folder-default';
+		const titleEl = firstCard.querySelector('.kamf-folder-title');
 		const folderTitle = titleEl ? titleEl.textContent.trim() : 'Menu Folder';
 		const folderIcon = firstCard.getAttribute('data-icon') || 'dashicons-category';
 
-		const subitemRows = firstCard.querySelectorAll('.admin-menu-folder-subitem-row');
+		const subitemRows = firstCard.querySelectorAll('.kamf-subitem-row');
 		const menuesData = [];
 
 		subitemRows.forEach(function (row, iIndex) {
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		// 拡張フック（複数フォルダー対応等のアドオンがJSONデータをフィルタリング可能）
 		if (window.wp && window.wp.hooks) {
-			jsonPayload = window.wp.hooks.applyFilters('adminMenuFolder.foldersJsonPayload', jsonPayload, foldersGrid);
+			jsonPayload = window.wp.hooks.applyFilters('kamf.foldersJsonPayload', jsonPayload, foldersGrid);
 		}
 
 		hiddenInput.value = JSON.stringify(jsonPayload);
@@ -271,10 +271,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * サブアイテム行DOM要素の生成
 	 */
 	function createSubitemRow(slug, title, url, position, iconClass) {
-		const removeText = (typeof adminMenuFolderParams !== 'undefined' && adminMenuFolderParams.removeItem) ? adminMenuFolderParams.removeItem : 'Remove Item';
+		const removeText = (typeof kamfParams !== 'undefined' && kamfParams.removeItem) ? kamfParams.removeItem : 'Remove Item';
 
 		const li = document.createElement('li');
-		li.className = 'admin-menu-folder-subitem-row';
+		li.className = 'kamf-subitem-row';
 		li.setAttribute('data-slug', slug);
 		li.setAttribute('data-title', title);
 		li.setAttribute('data-url', url);
@@ -282,14 +282,14 @@ document.addEventListener('DOMContentLoaded', function () {
 		li.setAttribute('data-icon-class', iconClass || '');
 
 		let actionsHtml = `
-			<button type="button" class="button button-small admin-menu-folder-item-remove-btn" title="${escapeHtml(removeText)}">
+			<button type="button" class="button button-small kamf-item-remove-btn" title="${escapeHtml(removeText)}">
 				<span class="dashicons dashicons-no-alt"></span>
 			</button>
 		`;
 
 		// 拡張フック（アドオンが並び替えボタン等を差し込めるようにする）
 		if (window.wp && window.wp.hooks) {
-			actionsHtml = window.wp.hooks.applyFilters('adminMenuFolder.subitemActionButtons', actionsHtml, {
+			actionsHtml = window.wp.hooks.applyFilters('kamf.subitemActionButtons', actionsHtml, {
 				slug,
 				title,
 				url,
@@ -299,11 +299,11 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		li.innerHTML = `
-			<div class="admin-menu-folder-subitem-title">
-				<span class="admin-menu-folder-menu-icon">${buildIconHtml(iconClass)}</span>
+			<div class="kamf-subitem-title">
+				<span class="kamf-menu-icon">${buildIconHtml(iconClass)}</span>
 				<span>${escapeHtml(title)}</span>
 			</div>
-			<div class="admin-menu-folder-subitem-actions">
+			<div class="kamf-subitem-actions">
 				${actionsHtml}
 			</div>
 		`;
@@ -315,13 +315,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	// イベント処理: 単一フォルダーカード内操作 (アイテム削除)
 	// ----------------------------------------------------------------------
 	foldersGrid.addEventListener('click', function (e) {
-		const card = e.target.closest('.admin-menu-folder-folder-card');
+		const card = e.target.closest('.kamf-folder-card');
 		if (!card) return;
 
 		// サブアイテムの削除（「✕」ボタン）
-		const itemRemoveBtn = e.target.closest('.admin-menu-folder-item-remove-btn');
+		const itemRemoveBtn = e.target.closest('.kamf-item-remove-btn');
 		if (itemRemoveBtn) {
-			const subitemRow = itemRemoveBtn.closest('.admin-menu-folder-subitem-row');
+			const subitemRow = itemRemoveBtn.closest('.kamf-subitem-row');
 			if (subitemRow) {
 				subitemRow.remove();
 				syncState();
@@ -334,9 +334,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	// ----------------------------------------------------------------------
 	pseudoList.addEventListener('change', function (e) {
 		const toggle = e.target;
-		if (!toggle.classList.contains('admin-menu-folder-item-toggle')) return;
+		if (!toggle.classList.contains('kamf-item-toggle')) return;
 
-		const itemRow = toggle.closest('.admin-menu-folder-pseudo-menu-item');
+		const itemRow = toggle.closest('.kamf-pseudo-menu-item');
 		if (!itemRow) return;
 
 		const slug = itemRow.getAttribute('data-slug');
@@ -350,16 +350,16 @@ document.addEventListener('DOMContentLoaded', function () {
 			return;
 		}
 
-		const targetCard = foldersGrid.querySelector('.admin-menu-folder-folder-card.is-active') || foldersGrid.querySelector('.admin-menu-folder-folder-card');
+		const targetCard = foldersGrid.querySelector('.kamf-folder-card.is-active') || foldersGrid.querySelector('.kamf-folder-card');
 		if (!targetCard) {
 			toggle.checked = false;
 			return;
 		}
 
-		const sublist = targetCard.querySelector('.admin-menu-folder-folder-sublist');
+		const sublist = targetCard.querySelector('.kamf-folder-sublist');
 
 		if (toggle.checked) {
-			const currentCount = sublist.querySelectorAll('.admin-menu-folder-subitem-row').length;
+			const currentCount = sublist.querySelectorAll('.kamf-subitem-row').length;
 			if (currentCount >= maxItems) {
 				alert(limitMessage);
 				toggle.checked = false;
@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 			// フックでカスタム挿入処理（Pro版等は末尾追加）を適用。未登録ならデフォルトで位置順ソート挿入
 			const handled = (window.wp && window.wp.hooks)
-				? window.wp.hooks.applyFilters('adminMenuFolder.insertSubitemRow', false, sublist, newRow)
+				? window.wp.hooks.applyFilters('kamf.insertSubitemRow', false, sublist, newRow)
 				: false;
 
 			if (!handled) {
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 			itemRow.classList.add('is-selected');
 		} else {
-			const existingRows = foldersGrid.querySelectorAll(`.admin-menu-folder-subitem-row[data-slug="${slug}"]`);
+			const existingRows = foldersGrid.querySelectorAll(`.kamf-subitem-row[data-slug="${slug}"]`);
 			existingRows.forEach(r => r.remove());
 			itemRow.classList.remove('is-selected');
 		}

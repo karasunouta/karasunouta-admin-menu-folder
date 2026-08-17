@@ -2,7 +2,7 @@
 /**
  * AdminMenuFolder Admin Menu Filter Class
  *
- * @package AdminMenuFolder
+ * @package KarasunoutaAdminMenuFolder
  */
 
 namespace karasunouta\AdminMenuFolder;
@@ -80,7 +80,7 @@ class Menu_Filter {
 
 			if ( in_array( $menu_slug, $all_target_slugs, true ) ) {
 				// 自プラグイン自体のメニューや設定メニューの移動は防ぐ
-				if ( 'admin-menu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'admin-menu-folder-' ) ) {
+				if ( 'karasunouta-admin-menu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'kamf-' ) ) {
 					continue;
 				}
 
@@ -98,18 +98,18 @@ class Menu_Filter {
 		$valid_folders = array();
 		foreach ( $menu_folders as $folder_idx => $folder ) {
 			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
-			$parent_slug  = 'admin-menu-folder-' . $folder_id;
+			$parent_slug  = 'kamf-' . $folder_id;
 			$folder_title = $folder['title'] ?? 'Menu Folder';
 			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
 			$folder_items = $folder['menues'] ?? array();
 
 			// 第2フォルダー以降で親メニューがまだ未登録の場合、拡張アドオンのアクションフック経由で動的に追加登録
 			if ( 0 !== $folder_idx ) {
-				do_action( 'admin_menu_folder_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
+				do_action( 'kamf_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
 			} else {
 				// 第1フォルダーのタイトル・スラグ・アイコン反映（初期登録されたノードを先頭フォルダーの最新情報に同期）
 				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && ( $m_item[2] === $parent_slug || str_starts_with( $m_item[2], 'admin-menu-folder-' ) ) ) {
+					if ( isset( $m_item[2] ) && ( $m_item[2] === $parent_slug || str_starts_with( $m_item[2], 'kamf-' ) ) ) {
 						$menu[ $k ][0] = $folder_title;
 						$menu[ $k ][2] = $parent_slug;
 						$menu[ $k ][6] = $folder_icon;
@@ -178,18 +178,18 @@ class Menu_Filter {
 				array_unshift(
 					$submenu[ $parent_slug ],
 					array(
-						__( 'Menu Folder Settings', 'admin-menu-folder' ),
+						__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
 						'manage_options',
-						'options-general.php?page=admin-menu-folder',
-						__( 'Menu Folder Settings', 'admin-menu-folder' ),
+						'options-general.php?page=karasunouta-admin-menu-folder',
+						__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
 					)
 				);
 			} elseif ( 'last' === $setting_link_pos ) {
 				$submenu[ $parent_slug ][] = array(
-					__( 'Menu Folder Settings', 'admin-menu-folder' ),
+					__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
 					'manage_options',
-					'options-general.php?page=admin-menu-folder',
-					__( 'Menu Folder Settings', 'admin-menu-folder' ),
+					'options-general.php?page=karasunouta-admin-menu-folder',
+					__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
 				);
 			}
 
@@ -215,7 +215,7 @@ class Menu_Filter {
 		$folder_slugs = array();
 		foreach ( $menu_folders as $f_idx => $folder ) {
 			$f_id           = $folder['id'] ?? ( 'folder_' . $f_idx );
-			$parent_slug    = 'admin-menu-folder-' . $f_id;
+			$parent_slug    = 'kamf-' . $f_id;
 			$folder_slugs[] = $parent_slug;
 		}
 
