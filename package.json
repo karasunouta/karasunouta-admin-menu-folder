@@ -1,6 +1,6 @@
 {
 	"name": "karasunouta-admin-menu-folder",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"description": "Organizes and stores various WP side menu items into folder structures.",
 	"files": [
 		"karasunouta-admin-menu-folder.php",
