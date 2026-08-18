@@ -335,10 +335,39 @@ class Main {
 		$id    = isset( $folder['id'] ) ? sanitize_key( (string) $folder['id'] ) : '';
 		$items = isset( $folder['menues'] ) && is_array( $folder['menues'] ) ? $folder['menues'] : array();
 
+		// 通常版の既定動作として、格納項目を元のメニュー位置順（昇順）に整列
+		$sorted_items = $this->sort_menu_items_by_original_position( $items );
+
+		/**
+		 * 管理メニューフォルダーに格納されたメニュー項目一覧をフィルタリング
+		 *
+		 * @param array $items  ソート済みのメニュー項目配列.
+		 * @param array $folder フォルダー設定配列.
+		 */
+		$filtered_items = apply_filters( 'kamf_folder_items', $sorted_items, $folder );
+
 		return array(
 			'id'     => '' !== $id ? $id : self::FOLDER_ID,
-			'menues' => array_values( $items ),
+			'menues' => is_array( $filtered_items ) ? array_values( $filtered_items ) : $sorted_items,
 		);
+	}
+
+	/**
+	 * メニュー項目一覧を元のWordPressメニュー位置 (original_position) の昇順に整列
+	 *
+	 * @param array $items メニュー項目配列のリスト.
+	 * @return array
+	 */
+	public function sort_menu_items_by_original_position( array $items ): array {
+		usort(
+			$items,
+			function ( $a, $b ) {
+				$pos_a = (float) ( $a['data']['original_position'] ?? ( $a['position'] ?? 999.0 ) );
+				$pos_b = (float) ( $b['data']['original_position'] ?? ( $b['position'] ?? 999.0 ) );
+				return $pos_a <=> $pos_b;
+			}
+		);
+		return array_values( $items );
 	}
 
 	/**

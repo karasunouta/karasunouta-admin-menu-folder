@@ -263,7 +263,6 @@ class Settings_Page {
 
 			<hr class="wp-header-end">
 
-			<?php settings_errors( 'kamf_messages' ); ?>
 
 			<form method="post" action="<?php echo esc_url( $this->main->get_settings_url() ); ?>" id="kamf-settings-form">
 				<?php wp_nonce_field( 'kamf_save_settings_action', 'kamf_save_settings_nonce' ); ?>
