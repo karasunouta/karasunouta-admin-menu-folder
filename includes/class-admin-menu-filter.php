@@ -38,221 +38,219 @@ class Menu_Filter {
 	 * WPサイドメニューの動的フィルタリング処理
 	 */
 	public function filter_admin_menu() {
-		global $menu, $submenu, $pagenow, $plugin_page, $parent_file;
+		global $menu;
 
 		if ( empty( $menu ) || ! is_array( $menu ) ) {
 			return;
 		}
 
-		$options      = $this->main->get_options();
-		$menu_folders = $options['menu_folders'] ?? array();
+		$folder = $this->main->get_folder();
+		$slugs  = wp_list_pluck( $folder['menues'], 'menu_slug' );
 
-		if ( empty( $menu_folders ) || ! is_array( $menu_folders ) ) {
-			return;
-		}
+		$this->apply_folder( Main::FOLDER_MENU_SLUG, $folder, $this->collect_items_to_move( $slugs ) );
 
-		// 現在アクティブな画面・親ファイルを特定
-		$get_page     = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_slug = $plugin_page ?? ( $get_page ?? $pagenow );
+		// フォルダーの親ノードをユーザーの設定順に従い、隙間のない連続キーで $menu の最末尾へ配置
+		$this->reposition_folders_to_bottom( $this->main->get_folder_menu_slugs() );
 
-		// 全フォルダーの格納対象メニューと全ターゲットスラグを収集
-		$all_target_slugs = array();
-		foreach ( $menu_folders as $folder ) {
-			if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
-				foreach ( $folder['menues'] as $item ) {
-					if ( ! empty( $item['menu_slug'] ) ) {
-						$all_target_slugs[] = $item['menu_slug'];
-					}
-				}
-			}
-		}
-
-		$all_target_slugs = array_unique( $all_target_slugs );
-
-		// 元の $menu から対象項目の元データを取得
-		$items_to_move = array();
-		foreach ( $menu as $index => $item ) {
-			if ( empty( $item[2] ) ) {
-				continue;
-			}
-
-			$menu_slug = $item[2];
-
-			if ( in_array( $menu_slug, $all_target_slugs, true ) ) {
-				// 自プラグイン自体のメニューや設定メニューの移動は防ぐ
-				if ( 'karasunouta-admin-menu-folder' === $menu_slug || 'options-general.php' === $menu_slug || str_starts_with( $menu_slug, 'kamf-' ) ) {
-					continue;
-				}
-
-				$is_active = $this->is_menu_active( $menu_slug, $current_slug, $parent_file );
-
-				$items_to_move[ $menu_slug ] = array(
-					'menu_index' => $index,
-					'menu_data'  => $item,
-					'is_active'  => $is_active,
-				);
-			}
-		}
-
-		// 各フォルダーごとに処理
-		$valid_folders = array();
-		foreach ( $menu_folders as $folder_idx => $folder ) {
-			$folder_id    = $folder['id'] ?? ( 'folder_' . $folder_idx );
-			$parent_slug  = 'kamf-' . $folder_id;
-			$folder_title = $folder['title'] ?? 'Menu Folder';
-			$folder_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
-			$folder_items = $folder['menues'] ?? array();
-
-			// 第2フォルダー以降で親メニューがまだ未登録の場合、拡張アドオンのアクションフック経由で動的に追加登録
-			if ( 0 !== $folder_idx ) {
-				do_action( 'kamf_register_extra_folder_menu', $folder_title, $parent_slug, $folder_icon, $folder_idx );
-			} else {
-				// 第1フォルダーのタイトル・スラグ・アイコン反映（初期登録されたノードを先頭フォルダーの最新情報に同期）
-				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && ( $m_item[2] === $parent_slug || str_starts_with( $m_item[2], 'kamf-' ) ) ) {
-						$menu[ $k ][0] = $folder_title;
-						$menu[ $k ][2] = $parent_slug;
-						$menu[ $k ][6] = $folder_icon;
-						break;
-					}
-				}
-			}
-
-			// サブメニュー構造の初期化
-			if ( isset( $submenu[ $parent_slug ] ) ) {
-				unset( $submenu[ $parent_slug ] );
-			}
-			$submenu[ $parent_slug ] = array();
-
-			$valid_item_count = 0;
-
-			if ( ! empty( $folder_items ) ) {
-				foreach ( $folder_items as $config_item ) {
-					$slug = $config_item['menu_slug'];
-
-					if ( ! isset( $items_to_move[ $slug ] ) ) {
-						continue;
-					}
-
-					$item_info = $items_to_move[ $slug ];
-					$menu_data = $item_info['menu_data'];
-					$is_active = $item_info['is_active'];
-
-					$title      = $menu_data[0];
-					$capability = $menu_data[1];
-					$url        = $menu_data[2];
-
-					$submenu[ $parent_slug ][] = array(
-						$title,
-						$capability,
-						$url,
-						$title,
-					);
-					$valid_item_count++;
-
-					// 非アクティブの場合のみ元のルートメニューから削除（非表示化）
-					if ( ! $is_active && isset( $menu[ $item_info['menu_index'] ] ) ) {
-						unset( $menu[ $item_info['menu_index'] ] );
-					}
-				}
-			}
-
-			// 有効なオリジナル格納アイテムが 0件 の場合、空フォルダーとして消去処理
-			if ( 0 === $valid_item_count ) {
-				// サブメニュー構造を破棄
-				unset( $submenu[ $parent_slug ] );
-
-				// ルートメニュー ($menu) からフォルダーのノードを破棄
-				foreach ( $menu as $k => $m_item ) {
-					if ( isset( $m_item[2] ) && $m_item[2] === $parent_slug ) {
-						unset( $menu[ $k ] );
-						break;
-					}
-				}
-				continue;
-			}
-
-			// 設定項目の自動追加ロジック (none / first / last) - 有効アイテムが1件以上ある場合のみ追加
-			$setting_link_pos = $options['setting_link_position'] ?? 'none';
-			if ( 'first' === $setting_link_pos ) {
-				array_unshift(
-					$submenu[ $parent_slug ],
-					array(
-						__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
-						'manage_options',
-						'options-general.php?page=karasunouta-admin-menu-folder',
-						__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
-					)
-				);
-			} elseif ( 'last' === $setting_link_pos ) {
-				$submenu[ $parent_slug ][] = array(
-					__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
-					'manage_options',
-					'options-general.php?page=karasunouta-admin-menu-folder',
-					__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
-				);
-			}
-
-			$valid_folders[] = $folder;
-		}
-
-		// 全フォルダーをユーザーの設定順に従い、隙間のない連続キーで $menu の最末尾へ一括再配置
-		$this->reposition_all_folders_to_bottom( $valid_folders );
+		/**
+		 * 管理メニューの再構築が完了した直後に発火
+		 */
+		do_action( 'kamf_after_filter_admin_menu' );
 	}
 
 	/**
-	 * 全フォルダー項目をユーザーの設定順（0, 1, 2...）に従い、隙間のない連続キー（+0, +1, +2...）で最末尾へ配置
+	 * 指定スラグのルートメニュー項目を、元データとアクティブ状態つきで収集
 	 *
-	 * @param array $menu_folders サブメニューフォルダー設定配列.
+	 * @param array $target_slugs 収集対象のルートメニュースラグ配列.
+	 * @return array スラグをキーとした収集結果.
 	 */
-	private function reposition_all_folders_to_bottom( array $menu_folders ) {
-		global $menu;
-		if ( empty( $menu ) || ! is_array( $menu ) ) {
+	public function collect_items_to_move( array $target_slugs ): array {
+		global $menu, $pagenow, $plugin_page, $parent_file;
+
+		if ( empty( $menu ) || ! is_array( $menu ) || empty( $target_slugs ) ) {
+			return array();
+		}
+
+		// 現在表示中の画面を特定（$plugin_page は wp-admin/admin.php が $_GET['page'] から設定する）
+		$current_slug   = ! empty( $plugin_page ) ? (string) $plugin_page : (string) $pagenow;
+		$protected      = $this->main->get_protected_slugs();
+		$items_to_move  = array();
+
+		foreach ( $menu as $index => $menu_item ) {
+			if ( empty( $menu_item[2] ) ) {
+				continue;
+			}
+
+			$menu_slug = $menu_item[2];
+
+			if ( ! in_array( $menu_slug, $target_slugs, true ) ) {
+				continue;
+			}
+
+			// 自身の設定ページやフォルダー自体の移動は防ぐ
+			if ( in_array( $menu_slug, $protected, true ) ) {
+				continue;
+			}
+
+			$items_to_move[ $menu_slug ] = array(
+				'menu_index' => $index,
+				'menu_data'  => $menu_item,
+				'is_active'  => $this->is_menu_active( $menu_slug, $current_slug, $parent_file ),
+			);
+		}
+
+		return $items_to_move;
+	}
+
+	/**
+	 * 1フォルダー分のサブメニュー構造を構築
+	 *
+	 * 格納できる有効な項目が1件も無い場合は、フォルダーの親ノードごと破棄する。
+	 *
+	 * @param string $parent_slug   フォルダーの親メニュースラグ.
+	 * @param array  $folder        フォルダー設定配列.
+	 * @param array  $items_to_move collect_items_to_move() の収集結果.
+	 * @return bool 有効な項目が1件以上あり、フォルダーが表示される場合に true.
+	 */
+	public function apply_folder( string $parent_slug, array $folder, array $items_to_move ): bool {
+		global $menu, $submenu;
+
+		if ( '' === $parent_slug ) {
+			return false;
+		}
+
+		// サブメニュー構造の初期化
+		unset( $submenu[ $parent_slug ] );
+		$submenu[ $parent_slug ] = array();
+
+		$folder_items     = isset( $folder['menues'] ) && is_array( $folder['menues'] ) ? $folder['menues'] : array();
+		$valid_item_count = 0;
+
+		foreach ( $folder_items as $config_item ) {
+			$slug = $config_item['menu_slug'] ?? '';
+
+			if ( '' === $slug || ! isset( $items_to_move[ $slug ] ) ) {
+				continue;
+			}
+
+			$item_info = $items_to_move[ $slug ];
+			$menu_data = $item_info['menu_data'];
+
+			$title      = $menu_data[0];
+			$capability = $menu_data[1];
+			$url        = $menu_data[2];
+
+			$submenu[ $parent_slug ][] = array( $title, $capability, $url, $title );
+			$valid_item_count++;
+
+			// 現在閲覧中でない場合のみ元のルートメニューから削除（非表示化）
+			if ( empty( $item_info['is_active'] ) && isset( $menu[ $item_info['menu_index'] ] ) ) {
+				unset( $menu[ $item_info['menu_index'] ] );
+			}
+		}
+
+		if ( 0 === $valid_item_count ) {
+			unset( $submenu[ $parent_slug ] );
+			$this->remove_menu_node( $parent_slug );
+			return false;
+		}
+
+		$this->add_settings_link( $parent_slug );
+
+		return true;
+	}
+
+	/**
+	 * フォルダー内に設定ページへのリンクを追加
+	 *
+	 * @param string $parent_slug フォルダーの親メニュースラグ.
+	 */
+	private function add_settings_link( string $parent_slug ) {
+		global $submenu;
+
+		$options  = $this->main->get_options();
+		$position = $options['setting_link_position'];
+
+		if ( 'none' === $position ) {
 			return;
 		}
 
-		// 全フォルダーの親スラグ順序を生成
-		$folder_slugs = array();
-		foreach ( $menu_folders as $f_idx => $folder ) {
-			$f_id           = $folder['id'] ?? ( 'folder_' . $f_idx );
-			$parent_slug    = 'kamf-' . $f_id;
-			$folder_slugs[] = $parent_slug;
+		$link = array(
+			__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
+			'manage_options',
+			'options-general.php?page=' . Main::SETTINGS_PAGE_SLUG,
+			__( 'Menu Folder Settings', 'karasunouta-admin-menu-folder' ),
+		);
+
+		if ( 'first' === $position ) {
+			array_unshift( $submenu[ $parent_slug ], $link );
+			return;
 		}
 
-		// 1. $menu から全フォルダー項目を一旦抽出・保持し、元の位置からは全ノードを確実に削除
-		$extracted_folders = array();
-		foreach ( $menu as $key => $item ) {
-			if ( isset( $item[2] ) && in_array( $item[2], $folder_slugs, true ) ) {
+		$submenu[ $parent_slug ][] = $link;
+	}
+
+	/**
+	 * ルートメニューから指定スラグのノードを削除
+	 *
+	 * @param string $slug 削除対象のルートメニュースラグ.
+	 */
+	private function remove_menu_node( string $slug ) {
+		global $menu;
+
+		foreach ( $menu as $key => $menu_item ) {
+			if ( isset( $menu_item[2] ) && $menu_item[2] === $slug ) {
+				unset( $menu[ $key ] );
+				break;
+			}
+		}
+	}
+
+	/**
+	 * フォルダーの親ノードを指定順（0, 1, 2...）に従い、隙間のない連続キーで最末尾へ配置
+	 *
+	 * @param array $ordered_parent_slugs フォルダーの親メニュースラグ配列（表示順）.
+	 */
+	public function reposition_folders_to_bottom( array $ordered_parent_slugs ) {
+		global $menu;
+
+		if ( empty( $menu ) || ! is_array( $menu ) || empty( $ordered_parent_slugs ) ) {
+			return;
+		}
+
+		// 1. $menu から全フォルダーノードを抽出・保持し、元の位置からは全ノードを確実に削除
+		$extracted = array();
+		foreach ( $menu as $key => $menu_item ) {
+			if ( isset( $menu_item[2] ) && in_array( $menu_item[2], $ordered_parent_slugs, true ) ) {
 				// 後勝ちで最新の指定ノードを保持し、重複キーはすべて消去
-				$extracted_folders[ $item[2] ] = $item;
+				$extracted[ $menu_item[2] ] = $menu_item;
 				unset( $menu[ $key ] );
 			}
 		}
 
-		if ( empty( $extracted_folders ) ) {
+		if ( empty( $extracted ) ) {
 			return;
 		}
 
-		// 2. 既存のキーの最大値を算出（数値型・文字列数値型の両方に対応）
+		// 2. 既存キーの最大値を算出（数値型・文字列数値型の両方に対応）
 		$max_existing = 0.0;
-		foreach ( array_keys( $menu ) as $k ) {
-			if ( is_numeric( $k ) ) {
-				$val = (float) $k;
-				if ( $val > $max_existing ) {
-					$max_existing = $val;
-				}
+		foreach ( array_keys( $menu ) as $key ) {
+			if ( is_numeric( $key ) && (float) $key > $max_existing ) {
+				$max_existing = (float) $key;
 			}
 		}
 
-		// 確実に全メニューの最末尾より後ろの位置を算出 (最小 999000)
-		$base_pos = (int) max( 999000, ceil( $max_existing ) + 100 );
+		// 確実に全メニューの最末尾より後ろの位置を算出（最小 999000）
+		$base_position = (int) max( 999000, ceil( $max_existing ) + 100 );
 
-		// 3. ユーザーの並び順通りに、隙間のない連続キー（$base_pos + 0, + 1, + 2...）で最末尾へ一括配置
-		foreach ( $folder_slugs as $idx => $slug ) {
-			if ( isset( $extracted_folders[ $slug ] ) ) {
-				$new_key          = (string) ( $base_pos + $idx );
-				$menu[ $new_key ] = $extracted_folders[ $slug ];
+		// 3. 指定順のまま、隙間のない連続キー（$base_position + 0, + 1, + 2...）で最末尾へ一括配置
+		$offset = 0;
+		foreach ( $ordered_parent_slugs as $slug ) {
+			if ( ! isset( $extracted[ $slug ] ) ) {
+				continue;
 			}
+			$menu[ (string) ( $base_position + $offset ) ] = $extracted[ $slug ];
+			$offset++;
 		}
 	}
 
@@ -289,4 +287,3 @@ class Menu_Filter {
 		return false;
 	}
 }
-

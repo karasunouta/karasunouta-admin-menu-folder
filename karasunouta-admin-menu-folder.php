@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Karasunouta Admin Menu Folder
  * Description:       Organizes and stores various WP side menu items into folder structures (submenus).
- * Version:           1.4.0
+ * Version:           1.5.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            karasunouta
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // プラグイン定数
-define( 'KAMF_VERSION', '1.4.0' );
+define( 'KAMF_VERSION', '1.5.0' );
 define( 'KAMF_PLUGIN_FILE', __FILE__ );
 define( 'KAMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KAMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

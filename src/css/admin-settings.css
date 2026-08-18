@@ -6,6 +6,24 @@
 	margin-top: 20px;
 }
 
+/* 設定のリセットフォーム（ページタイトル行に並べる） */
+.kamf-reset-form {
+	display: inline-block;
+	margin-left: 15px;
+}
+
+/* 送信用の非表示フィールド置き場 */
+.kamf-folder-fields {
+	display: none;
+}
+
+/* メニューアイコンとして使用するカスタム画像 */
+.kamf-custom-icon {
+	width: 18px;
+	height: 18px;
+	vertical-align: middle;
+}
+
 .kamf-settings-container {
 	display: flex;
 	gap: 30px;

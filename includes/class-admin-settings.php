@@ -45,27 +45,26 @@ class Settings_Page {
 			__( 'Admin Menu Folder', 'karasunouta-admin-menu-folder' ),
 			__( 'Admin Menu Folder', 'karasunouta-admin-menu-folder' ),
 			'manage_options',
-			'karasunouta-admin-menu-folder',
+			Main::SETTINGS_PAGE_SLUG,
 			array( $this, 'render_settings_page' )
 		);
 
-		// トップレベル「Menu Folder」フォルダメニューを追加
-		// ※初期IDを動的タイムスタンプにするとDB未保存の初期状態でリクエストごとにID・URLが変動するため、
-		// 固定識別子 'folder-default' を使用し、スラグを 'kamf-folder-default' に統一。
+		// フォルダーの親メニューノードを追加（格納項目が無い場合は Menu_Filter が破棄する）
+		$folder = $this->main->get_folder();
+
 		add_menu_page(
-			__( 'Menu Folder', 'karasunouta-admin-menu-folder' ),
-			__( 'Menu Folder', 'karasunouta-admin-menu-folder' ),
+			$this->main->get_folder_title( $folder ),
+			$this->main->get_folder_title( $folder ),
 			'manage_options',
-			'kamf-folder-default',
+			Main::FOLDER_MENU_SLUG,
 			'__return_null',
-			'dashicons-category',
+			$this->main->get_folder_icon( $folder ),
 			9999
 		);
 	}
 
 	/**
 	 * フォーム送信（保存）の早期ハンドリング（admin_init）
-	 * 保護対象スラグのサニタイズ
 	 */
 	public function handle_save_settings() {
 		if ( ! isset( $_POST['kamf_save_settings'] ) ) {
@@ -78,109 +77,80 @@ class Settings_Page {
 
 		check_admin_referer( 'kamf_save_settings_action', 'kamf_save_settings_nonce' );
 
-		$saved_folders_json = isset( $_POST['kamf_folders_json'] ) ? sanitize_text_field( wp_unslash( $_POST['kamf_folders_json'] ) ) : '[]';
-		$decoded_folders    = json_decode( $saved_folders_json, true );
-
-		if ( is_array( $decoded_folders ) ) {
-			$max_folders     = $this->main->get_max_folders();
-			$max_items       = $this->main->get_max_items();
-			$protected_slugs = $this->main->get_protected_slugs();
-
-			// フィルターフック経由でサニタイズ（拡張アドオン側で全フォルダーをサニタイズ処理可能）
-			$sanitized_folders = apply_filters(
-				'kamf_sanitize_folders_for_save',
-				null,
-				$decoded_folders,
-				$max_folders,
-				$max_items,
-				$protected_slugs
-			);
-
-			if ( ! is_array( $sanitized_folders ) ) {
-				$sanitized_folders = array();
-				foreach ( array_slice( $decoded_folders, 0, $max_folders ) as $f_idx => $folder ) {
-					$raw_items       = isset( $folder['menues'] ) && is_array( $folder['menues'] ) ? $folder['menues'] : array();
-					$sanitized_items = array();
-					$item_count      = 0;
-
-					foreach ( $raw_items as $item ) {
-						if ( $item_count >= $max_items ) {
-							break;
-						}
-						$slug = sanitize_text_field( $item['menu_slug'] ?? '' );
-
-						if ( ! empty( $slug ) && ! in_array( $slug, $protected_slugs, true ) ) {
-							$sanitized_items[] = array(
-								'menu_slug' => $slug,
-								'title'     => sanitize_text_field( $item['title'] ?? '' ),
-								'order'     => (int) ( $item['order'] ?? $item_count ),
-								'data'      => array(
-									'url'               => sanitize_text_field( $item['data']['url'] ?? $item['url'] ?? '' ),
-									'original_position' => isset( $item['data']['original_position'] ) ? (float) $item['data']['original_position'] : (isset( $item['position'] ) ? (float) $item['position'] : 999.0),
-									'icon_class'        => sanitize_text_field( $item['data']['icon_class'] ?? $item['icon_class'] ?? '' ),
-								),
-							);
-							$item_count++;
-						}
-					}
-
-					$sanitized_folders[] = array(
-						'id'       => sanitize_text_field( $folder['id'] ?? ( 'folder_' . $f_idx ) ),
-						'title'    => 'Menu Folder',
-						'icon'     => sanitize_text_field( $folder['icon'] ?? 'dashicons-category' ),
-						'position' => (int) ( $folder['position'] ?? 99 ),
-						'menues'   => $sanitized_items,
-					);
-				}
-			}
-
-			if ( empty( $sanitized_folders ) ) {
-				$sanitized_folders = array(
-					array(
-						// 初期IDの固定識別子 'folder-default'
-						'id'       => 'folder-default',
-						'title'    => 'Menu Folder',
-						'icon'     => 'dashicons-category',
-						'position' => 99,
-						'menues'   => array(),
-					),
-				);
-			}
-
-			$show_admin_bar_link = isset( $_POST['kamf_show_admin_bar_link'] ) ? 1 : 0;
-			$setting_link_pos    = isset( $_POST['kamf_setting_link_position'] ) ? sanitize_text_field( wp_unslash( $_POST['kamf_setting_link_position'] ) ) : 'none';
-			if ( ! in_array( $setting_link_pos, array( 'none', 'first', 'last' ), true ) ) {
-				$setting_link_pos = 'none';
-			}
-
-			$options                          = $this->main->get_raw_options();
-			$options['menu_folders']          = $sanitized_folders;
-			$options['show_admin_bar_link']   = (bool) $show_admin_bar_link;
-			$options['setting_link_position'] = $setting_link_pos;
-			$this->main->save_options( $options );
-
-			// リダイレクトして即座に画面全体を最新状態で再読み込み
-			wp_safe_redirect( admin_url( 'options-general.php?page=karasunouta-admin-menu-folder&kamf_updated=true' ) );
-			exit;
+		$raw_folder = array();
+		if ( isset( $_POST['kamf_folder'] ) && is_array( $_POST['kamf_folder'] ) ) {
+			$raw_folder = map_deep( wp_unslash( $_POST['kamf_folder'] ), 'sanitize_text_field' );
 		}
+
+		$raw_link_position = isset( $_POST['kamf_setting_link_position'] )
+			? sanitize_text_field( wp_unslash( $_POST['kamf_setting_link_position'] ) )
+			: 'none';
+
+		$options                          = $this->main->get_raw_options();
+		$options['version']               = KAMF_VERSION;
+		$options['folder']                = $this->main->sanitize_folder( $raw_folder, $this->main->get_protected_slugs() );
+		$options['show_admin_bar_link']   = isset( $_POST['kamf_show_admin_bar_link'] );
+		$options['setting_link_position'] = $this->main->normalize_setting_link_position( $raw_link_position );
+
+		$this->main->save_options( $options );
+
+		add_settings_error(
+			'kamf_messages',
+			'kamf_settings_saved',
+			__( 'Settings saved.', 'karasunouta-admin-menu-folder' ),
+			'success'
+		);
+
+		/**
+		 * 設定の保存完了直後（リダイレクト前）に発火
+		 *
+		 * @param array $options 保存された設定配列.
+		 */
+		do_action( 'kamf_after_save_settings', $options );
+
+		$this->redirect_with_notices();
 	}
 
 	/**
 	 * 設定のリセット（初期化）処理
 	 */
 	public function handle_reset_settings() {
-		if ( isset( $_POST['action'] ) && 'kamf_reset_settings' === $_POST['action'] ) {
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'karasunouta-admin-menu-folder' ) );
-			}
-
-			check_admin_referer( 'kamf_reset_settings_nonce', 'kamf_reset_nonce' );
-
-			$this->main->reset_options();
-
-			wp_safe_redirect( admin_url( 'options-general.php?page=karasunouta-admin-menu-folder&kamf_reset=true' ) );
-			exit;
+		if ( ! isset( $_POST['kamf_reset_settings'] ) ) {
+			return;
 		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to perform this action.', 'karasunouta-admin-menu-folder' ) );
+		}
+
+		check_admin_referer( 'kamf_reset_settings_action', 'kamf_reset_settings_nonce' );
+
+		$this->main->reset_options();
+
+		add_settings_error(
+			'kamf_messages',
+			'kamf_settings_reset',
+			__( 'Settings reset to default.', 'karasunouta-admin-menu-folder' ),
+			'success'
+		);
+
+		/**
+		 * 設定のリセット完了直後（リダイレクト前）に発火
+		 */
+		do_action( 'kamf_after_reset_settings' );
+
+		$this->redirect_with_notices();
+	}
+
+	/**
+	 * 管理通知を引き継いだ状態で設定ページへリダイレクト
+	 */
+	private function redirect_with_notices() {
+		// WordPress標準の仕組みでリダイレクト後も通知を表示する
+		set_transient( 'settings_errors', get_settings_errors(), 30 );
+
+		wp_safe_redirect( $this->main->get_settings_url( array( 'settings-updated' => 'true' ) ) );
+		exit;
 	}
 
 	/**
@@ -189,6 +159,11 @@ class Settings_Page {
 	 * @param string $hook_suffix 現在の管理画面フック名.
 	 */
 	public function enqueue_assets( $hook_suffix ) {
+		// アセットは自身の設定画面でのみ読み込む
+		if ( ! is_string( $hook_suffix ) || strpos( $hook_suffix, Main::SETTINGS_PAGE_SLUG ) === false ) {
+			return;
+		}
+
 		$asset_file = KAMF_PLUGIN_DIR . 'build/admin-settings.asset.php';
 		if ( file_exists( $asset_file ) ) {
 			$asset_info = require $asset_file;
@@ -203,7 +178,13 @@ class Settings_Page {
 			$deps[] = 'wp-hooks';
 		}
 
-		// JSは全管理画面でEnqueue（親リンク href の書き換え・クリック補正のため）
+		wp_enqueue_style(
+			'kamf-admin-settings-css',
+			KAMF_PLUGIN_URL . 'build/admin-settings.css',
+			array(),
+			$version
+		);
+
 		wp_enqueue_script(
 			'kamf-admin-settings-js',
 			KAMF_PLUGIN_URL . 'build/admin-settings.js',
@@ -216,30 +197,20 @@ class Settings_Page {
 			'kamf-admin-settings-js',
 			'kamfParams',
 			array(
-				'maxItems'        => $this->main->get_max_items(),
-				'nonce'           => wp_create_nonce( 'kamf_save_settings_nonce' ),
-				'settingsUrl'     => admin_url( 'options-general.php?page=karasunouta-admin-menu-folder' ),
+				'maxItems'        => Main::MAX_ITEMS_PER_FOLDER,
+				'settingsUrl'     => $this->main->get_settings_url(),
 				'protectedSlugs'  => $this->main->get_protected_slugs(),
+				'primarySlug'     => Main::FOLDER_MENU_SLUG,
 				'removeItem'      => __( 'Remove Item', 'karasunouta-admin-menu-folder' ),
 				'confirmReset'    => __( 'Are you sure you want to reset Karasunouta Admin Menu Folder settings to default?', 'karasunouta-admin-menu-folder' ),
 				'limitMessage'    => sprintf(
 					/* translators: %d: Maximum allowed items */
 					__( 'You can store up to %d menu items per folder.', 'karasunouta-admin-menu-folder' ),
-					$this->main->get_max_items()
+					Main::MAX_ITEMS_PER_FOLDER
 				),
 				'noItemsSelected' => __( 'No menu items selected', 'karasunouta-admin-menu-folder' ),
 			)
 		);
-
-		// CSSは設定画面のみで読込
-		if ( strpos( $hook_suffix, 'karasunouta-admin-menu-folder' ) !== false ) {
-			wp_enqueue_style(
-				'kamf-admin-settings-css',
-				KAMF_PLUGIN_URL . 'build/admin-settings.css',
-				array(),
-				$version
-			);
-		}
 	}
 
 	/**
@@ -250,64 +221,53 @@ class Settings_Page {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'karasunouta-admin-menu-folder' ) );
 		}
 
-		$options         = $this->main->get_options();
-		$max_folders     = $this->main->get_max_folders();
-		$menu_folders    = array_slice( $options['menu_folders'] ?? array(), 0, $max_folders );
-		$protected_slugs = $this->main->get_protected_slugs();
+		$options      = $this->main->get_options();
+		$folder       = $options['folder'];
+		$folder_nodes = $this->main->get_folder_nodes();
 
-		// 全フォルダーの選択済みメニュー項目を統合収集
-		$all_selected_menues = array();
-		$selected_slugs      = array();
+		$card = array(
+			'id'      => $folder['id'],
+			'slug'    => Main::FOLDER_MENU_SLUG,
+			'title'   => $this->main->get_folder_title( $folder ),
+			'icon'    => $this->main->get_folder_icon( $folder ),
+			'primary' => true,
+			'active'  => true,
+			'menues'  => $folder['menues'],
+		);
 
-		foreach ( $menu_folders as $folder ) {
-			if ( ! empty( $folder['menues'] ) && is_array( $folder['menues'] ) ) {
-				foreach ( $folder['menues'] as $item ) {
-					$all_selected_menues[] = $item;
-					if ( ! empty( $item['menu_slug'] ) ) {
-						$selected_slugs[] = $item['menu_slug'];
-					}
-				}
-			}
-		}
-
-		// 全ルートメニュー項目を復元・取得
-		$available_menues = $this->get_clean_root_menues( $all_selected_menues, $menu_folders );
+		$available_menues = $this->get_root_menu_items( $folder['menues'], $folder_nodes );
+		$selected_slugs   = wp_list_pluck( $folder['menues'], 'menu_slug' );
+		$protected_slugs  = $this->main->get_protected_slugs();
 
 		?>
 		<div class="wrap kamf-settings-wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Admin Menu Folder Settings', 'karasunouta-admin-menu-folder' ); ?></h1>
-			<?php
-			$reset_button_html = sprintf(
-				'<form id="kamf-reset-form" method="post" action="%s" style="display:inline-block;margin-left:15px;">' .
-				'<input type="hidden" name="action" value="kamf_reset_settings" />' .
-				'%s' .
-				'<button type="button" id="kamf-reset-settings-btn" class="page-title-action">%s</button>' .
-				'</form>',
-				esc_url( admin_url( 'options-general.php?page=karasunouta-admin-menu-folder' ) ),
-				wp_nonce_field( 'kamf_reset_settings_nonce', 'kamf_reset_nonce', true, false ),
-				esc_html__( 'Reset to Default', 'karasunouta-admin-menu-folder' )
-			);
 
-			$header_actions_html = apply_filters( 'kamf_render_header_actions', $reset_button_html, count( $menu_folders ), $max_folders );
-			echo $header_actions_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			<form id="kamf-reset-form" method="post" action="<?php echo esc_url( $this->main->get_settings_url() ); ?>" class="kamf-reset-form">
+				<?php wp_nonce_field( 'kamf_reset_settings_action', 'kamf_reset_settings_nonce' ); ?>
+				<input type="hidden" name="kamf_reset_settings" value="1" />
+				<button type="button" id="kamf-reset-settings-btn" class="page-title-action">
+					<?php esc_html_e( 'Reset to Default', 'karasunouta-admin-menu-folder' ); ?>
+				</button>
+			</form>
+
+			<?php
+			/**
+			 * ページタイトル行のアクション領域の末尾に出力
+			 */
+			do_action( 'kamf_render_page_title_actions' );
 			?>
+
 			<hr class="wp-header-end">
 
-			<?php if ( isset( $_GET['kamf_updated'] ) && 'true' === $_GET['kamf_updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( 'Settings saved.', 'karasunouta-admin-menu-folder' ); ?></p>
-				</div>
-			<?php endif; ?>
+			<?php settings_errors( 'kamf_messages' ); ?>
 
-			<?php if ( isset( $_GET['kamf_reset'] ) && 'true' === $_GET['kamf_reset'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( 'Settings reset to default.', 'karasunouta-admin-menu-folder' ); ?></p>
-				</div>
-			<?php endif; ?>
-
-			<form method="post" action="" id="kamf-settings-form">
+			<form method="post" action="<?php echo esc_url( $this->main->get_settings_url() ); ?>" id="kamf-settings-form">
 				<?php wp_nonce_field( 'kamf_save_settings_action', 'kamf_save_settings_nonce' ); ?>
-				<input type="hidden" name="kamf_folders_json" id="kamf_folders_json" value="<?php echo esc_attr( wp_json_encode( $menu_folders ) ); ?>">
+
+				<div id="kamf-folder-fields" class="kamf-folder-fields">
+					<?php $this->render_folder_fields( $folder ); ?>
+				</div>
 
 				<div class="kamf-settings-container">
 					<!-- 左側: 擬似WPサイドメニュー（保護対象は disabled 化） -->
@@ -316,25 +276,32 @@ class Settings_Page {
 							<ul class="kamf-pseudo-menu-list">
 								<?php foreach ( $available_menues as $item ) : ?>
 									<?php
-									$slug                  = $item['slug'];
-									$title                 = $item['title'];
-									$icon_html             = $item['icon_html'];
-									$icon_class            = $item['icon_class'];
-									$position              = $item['position'];
-									$is_checked            = in_array( $slug, $selected_slugs, true );
-									$is_disabled           = in_array( $slug, $protected_slugs, true ) || ! empty( $item['is_folder'] ) || str_starts_with( $slug, 'kamf-' );
-									$is_active_folder_item = $is_disabled && ( 'kamf-folder-default' === $slug || 'folder-default' === $slug );
+									$slug        = $item['slug'];
+									$is_checked  = in_array( $slug, $selected_slugs, true );
+									$is_folder   = ! empty( $item['is_folder'] );
+									$is_disabled = $is_folder || in_array( $slug, $protected_slugs, true );
+
+									$item_classes = array( 'kamf-pseudo-menu-item' );
+									if ( $is_checked ) {
+										$item_classes[] = 'is-selected';
+									}
+									if ( $is_disabled ) {
+										$item_classes[] = 'is-disabled';
+									}
+									if ( $is_folder && ! empty( $item['is_primary'] ) ) {
+										$item_classes[] = 'is-selected-folder-active';
+									}
 									?>
-									<li class="kamf-pseudo-menu-item <?php echo $is_checked ? 'is-selected' : ''; ?> <?php echo $is_disabled ? 'is-disabled' : ''; ?> <?php echo $is_active_folder_item ? 'is-selected-folder-active' : ''; ?>"
+									<li class="<?php echo esc_attr( implode( ' ', $item_classes ) ); ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
-										data-title="<?php echo esc_attr( wp_strip_all_tags( $title ) ); ?>"
+										data-title="<?php echo esc_attr( $item['title'] ); ?>"
 										data-url="<?php echo esc_attr( $item['url'] ); ?>"
-										data-position="<?php echo esc_attr( $position ); ?>"
-										data-icon-class="<?php echo esc_attr( $icon_class ); ?>"
+										data-position="<?php echo esc_attr( (string) $item['position'] ); ?>"
+										data-icon-class="<?php echo esc_attr( $item['icon_class'] ); ?>"
 									>
 										<div class="kamf-menu-label">
-											<span class="kamf-menu-icon"><?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-											<span class="kamf-menu-title"><?php echo wp_kses_post( $title ); ?></span>
+											<span class="kamf-menu-icon"><?php $this->render_icon( $item['icon_class'] ); ?></span>
+											<span class="kamf-menu-title"><?php echo esc_html( $item['title'] ); ?></span>
 										</div>
 										<div class="kamf-menu-checkbox">
 											<input type="checkbox"
@@ -350,60 +317,19 @@ class Settings_Page {
 						</div>
 					</div>
 
-					<!-- 右側: サブメニューフォルダー プレビュー・マルチグリッドエリア -->
+					<!-- 右側: フォルダーのプレビュー・カスタマイズエリア -->
 					<div class="kamf-preview-container">
 						<div class="kamf-folders-grid" id="kamf-folders-grid">
-							<?php foreach ( $menu_folders as $f_idx => $folder ) : ?>
-								<?php
-								$f_id      = $folder['id'] ?? ( 'folder_' . $f_idx );
-								$f_title   = $folder['title'] ?? 'Menu Folder';
-								$f_icon    = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
-								$f_items   = $folder['menues'] ?? array();
-								$is_active = ( 0 === $f_idx );
-								?>
-								<div class="kamf-folder-card <?php echo $is_active ? 'is-active' : ''; ?>" data-folder-id="<?php echo esc_attr( $f_id ); ?>" data-icon="<?php echo esc_attr( $f_icon ); ?>">
-									<div class="kamf-folder-header">
-										<div class="kamf-folder-header-left">
-											<span class="kamf-folder-icon"><?php echo $this->build_icon_html( $f_icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-											<span class="kamf-folder-title"><?php echo esc_html( $f_title ); ?></span>
-										</div>
-										<div class="kamf-folder-header-actions">
-											<?php do_action( 'kamf_render_folder_header_actions', $folder, $f_idx, count( $menu_folders ) ); ?>
-										</div>
-									</div>
-									<ul class="kamf-folder-sublist">
-										<?php if ( empty( $f_items ) ) : ?>
-											<li class="kamf-empty-notice"><?php esc_html_e( 'No menu items selected', 'karasunouta-admin-menu-folder' ); ?></li>
-										<?php else : ?>
-											<?php foreach ( $f_items as $index => $sub_item ) : ?>
-												<li class="kamf-subitem-row"
-													data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ); ?>"
-													data-title="<?php echo esc_attr( $sub_item['title'] ); ?>"
-													data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>"
-													data-position="<?php echo esc_attr( $sub_item['data']['original_position'] ?? 999 ); ?>"
-													data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
-												>
-													<div class="kamf-subitem-title">
-														<span class="kamf-menu-icon"><?php echo $this->build_icon_html( $sub_item['data']['icon_class'] ?? '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-														<span><?php echo esc_html( $sub_item['title'] ); ?></span>
-													</div>
-													<?php
-													$remove_button_html   = sprintf(
-														'<button type="button" class="button button-small kamf-item-remove-btn" title="%s"><span class="dashicons dashicons-no-alt"></span></button>',
-														esc_attr__( 'Remove Item', 'karasunouta-admin-menu-folder' )
-													);
-													$subitem_buttons_html = apply_filters( 'kamf_render_subitem_buttons', $remove_button_html, $sub_item, $index, count( $f_items ) );
-													?>
-													<div class="kamf-subitem-actions">
-														<?php echo $subitem_buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-													</div>
-												</li>
-											<?php endforeach; ?>
-										<?php endif; ?>
-									</ul>
-									<?php do_action( 'kamf_render_folder_footer_actions', $f_idx, count( $menu_folders ) ); ?>
-								</div>
-							<?php endforeach; ?>
+							<?php
+							$this->render_folder_card( $card );
+
+							/**
+							 * フォルダーカードの描画後に出力
+							 *
+							 * @param array $card プライマリーフォルダーのカード情報.
+							 */
+							do_action( 'kamf_after_folder_cards', $card );
+							?>
 						</div>
 
 						<div class="kamf-setting-options-card">
@@ -411,15 +337,14 @@ class Settings_Page {
 								<label for="kamf_show_admin_bar_link" class="kamf-setting-option-label">
 									<?php esc_html_e( 'Show link to settings page in Toolbar:', 'karasunouta-admin-menu-folder' ); ?>
 								</label>
-								<?php $show_admin_bar_link = ! empty( $options['show_admin_bar_link'] ); ?>
-								<input type="checkbox" name="kamf_show_admin_bar_link" id="kamf_show_admin_bar_link" value="1" <?php checked( $show_admin_bar_link ); ?>>
+								<input type="checkbox" name="kamf_show_admin_bar_link" id="kamf_show_admin_bar_link" value="1" <?php checked( ! empty( $options['show_admin_bar_link'] ) ); ?>>
 							</div>
 
 							<div class="kamf-setting-option-row">
 								<label for="kamf_setting_link_position" class="kamf-setting-option-label">
 									<?php esc_html_e( 'Add settings menu to Menu Folder:', 'karasunouta-admin-menu-folder' ); ?>
 								</label>
-								<?php $setting_link_pos = $options['setting_link_position'] ?? 'none'; ?>
+								<?php $setting_link_pos = $options['setting_link_position']; ?>
 								<select name="kamf_setting_link_position" id="kamf_setting_link_position" class="kamf-setting-option-select">
 									<option value="none" <?php selected( $setting_link_pos, 'none' ); ?>><?php esc_html_e( 'Do not add', 'karasunouta-admin-menu-folder' ); ?></option>
 									<option value="first" <?php selected( $setting_link_pos, 'first' ); ?>><?php esc_html_e( 'Add to top', 'karasunouta-admin-menu-folder' ); ?></option>
@@ -436,178 +361,294 @@ class Settings_Page {
 			</form>
 		</div>
 
-		<?php do_action( 'kamf_render_admin_modal' ); ?>
+		<?php
+		/**
+		 * 設定ページ本体の描画完了後に出力（モーダルダイアログ等の配置用）
+		 */
+		do_action( 'kamf_after_settings_page' );
+	}
+
+	/**
+	 * フォルダーカードを描画
+	 *
+	 * @param array $card id / slug / title / icon / primary / active / menues を持つ配列.
+	 */
+	public function render_folder_card( array $card ) {
+		$card = wp_parse_args(
+			$card,
+			array(
+				'id'      => Main::FOLDER_ID,
+				'slug'    => Main::FOLDER_MENU_SLUG,
+				'title'   => '',
+				'icon'    => 'dashicons-category',
+				'primary' => false,
+				'active'  => false,
+				'menues'  => array(),
+			)
+		);
+
+		$items = is_array( $card['menues'] ) ? $card['menues'] : array();
+
+		$card_classes = array( 'kamf-folder-card' );
+		if ( ! empty( $card['active'] ) ) {
+			$card_classes[] = 'is-active';
+		}
+		if ( ! empty( $card['primary'] ) ) {
+			$card_classes[] = 'is-primary';
+		}
+		?>
+		<div class="<?php echo esc_attr( implode( ' ', $card_classes ) ); ?>"
+			data-folder-id="<?php echo esc_attr( $card['id'] ); ?>"
+			data-folder-slug="<?php echo esc_attr( $card['slug'] ); ?>"
+			data-icon="<?php echo esc_attr( $card['icon'] ); ?>"
+			data-primary="<?php echo esc_attr( ! empty( $card['primary'] ) ? '1' : '0' ); ?>"
+		>
+			<div class="kamf-folder-header">
+				<div class="kamf-folder-header-left">
+					<span class="kamf-folder-icon"><?php $this->render_icon( $card['icon'] ); ?></span>
+					<span class="kamf-folder-title"><?php echo esc_html( $card['title'] ); ?></span>
+				</div>
+				<div class="kamf-folder-header-actions">
+					<?php
+					/**
+					 * フォルダーカードのヘッダーアクション領域に出力
+					 *
+					 * @param array $card カード情報.
+					 */
+					do_action( 'kamf_render_folder_header_actions', $card );
+					?>
+				</div>
+			</div>
+			<ul class="kamf-folder-sublist">
+				<?php if ( empty( $items ) ) : ?>
+					<li class="kamf-empty-notice"><?php esc_html_e( 'No menu items selected', 'karasunouta-admin-menu-folder' ); ?></li>
+				<?php else : ?>
+					<?php foreach ( $items as $index => $sub_item ) : ?>
+						<li class="kamf-subitem-row"
+							data-slug="<?php echo esc_attr( $sub_item['menu_slug'] ?? '' ); ?>"
+							data-title="<?php echo esc_attr( $sub_item['title'] ?? '' ); ?>"
+							data-url="<?php echo esc_attr( $sub_item['data']['url'] ?? '' ); ?>"
+							data-position="<?php echo esc_attr( (string) ( $sub_item['data']['original_position'] ?? 999 ) ); ?>"
+							data-icon-class="<?php echo esc_attr( $sub_item['data']['icon_class'] ?? '' ); ?>"
+						>
+							<div class="kamf-subitem-title">
+								<span class="kamf-menu-icon"><?php $this->render_icon( $sub_item['data']['icon_class'] ?? '' ); ?></span>
+								<span><?php echo esc_html( $sub_item['title'] ?? '' ); ?></span>
+							</div>
+							<div class="kamf-subitem-actions">
+								<?php
+								/**
+								 * メニュー項目のアクション領域の先頭に出力
+								 *
+								 * @param array $sub_item メニュー項目情報.
+								 * @param int   $index    フォルダー内の並び順.
+								 * @param array $card     カード情報.
+								 */
+								do_action( 'kamf_render_subitem_actions', $sub_item, $index, $card );
+								?>
+								<button type="button" class="button button-small kamf-item-remove-btn" title="<?php esc_attr_e( 'Remove Item', 'karasunouta-admin-menu-folder' ); ?>">
+									<span class="dashicons dashicons-no-alt"></span>
+								</button>
+							</div>
+						</li>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</ul>
+			<?php
+			/**
+			 * フォルダーカードのフッターアクション領域に出力
+			 *
+			 * @param array $card カード情報.
+			 */
+			do_action( 'kamf_render_folder_footer_actions', $card );
+			?>
+		</div>
 		<?php
 	}
 
 	/**
-	 * グローバル $menu および格離された選択済み項目を「元の位置」と「元のアイコン」で忠実に完全再構成
+	 * フォルダーの保存用フォームフィールドを描画
 	 *
-	 * @param array $selected_menues 保存されている選択項目.
-	 * @param array $menu_folders 保存されている全サブメニューフォルダー構造.
+	 * @param array  $folder     フォルダー設定配列.
+	 * @param string $field_name フォームフィールドの基準名.
+	 */
+	public function render_folder_fields( array $folder, string $field_name = 'kamf_folder' ) {
+		printf(
+			'<input type="hidden" name="%1$s[id]" value="%2$s" />',
+			esc_attr( $field_name ),
+			esc_attr( $folder['id'] ?? Main::FOLDER_ID )
+		);
+
+		$items = isset( $folder['menues'] ) && is_array( $folder['menues'] ) ? $folder['menues'] : array();
+
+		foreach ( array_values( $items ) as $index => $item ) {
+			$values = array(
+				'menu_slug'  => $item['menu_slug'] ?? '',
+				'title'      => $item['title'] ?? '',
+				'url'        => $item['data']['url'] ?? '',
+				'position'   => (string) ( $item['data']['original_position'] ?? 999 ),
+				'icon_class' => $item['data']['icon_class'] ?? '',
+			);
+
+			foreach ( $values as $key => $value ) {
+				printf(
+					'<input type="hidden" name="%1$s[menues][%2$d][%3$s]" value="%4$s" />',
+					esc_attr( $field_name ),
+					(int) $index,
+					esc_attr( $key ),
+					esc_attr( (string) $value )
+				);
+			}
+		}
+	}
+
+	/**
+	 * メニュー項目のアイコンをエスケープ済みで出力
+	 *
+	 * @param string $icon_class アイコンクラスまたは画像URI.
+	 */
+	public function render_icon( string $icon_class ) {
+		$icon_class = trim( $icon_class );
+
+		if ( str_contains( $icon_class, 'dashicons-' ) ) {
+			printf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
+			return;
+		}
+
+		if ( preg_match( '#^data:image/(?:png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$#', $icon_class ) ) {
+			printf( '<img src="%s" alt="" class="kamf-custom-icon" width="18" height="18" />', esc_attr( $icon_class ) );
+			return;
+		}
+
+		if ( str_starts_with( $icon_class, 'http://' ) || str_starts_with( $icon_class, 'https://' ) || str_starts_with( $icon_class, '/' ) ) {
+			printf( '<img src="%s" alt="" class="kamf-custom-icon" width="18" height="18" />', esc_url( $icon_class ) );
+			return;
+		}
+
+		echo '<span class="dashicons dashicons-admin-generic"></span>';
+	}
+
+	/**
+	 * 擬似サイドメニュー用に、ルートメニュー項目を「元の位置」「元のアイコン」で再構成して取得
+	 *
+	 * @param array $selected_items フォルダーに格納されているメニュー項目.
+	 * @param array $folder_nodes   フォルダーの親メニューノード一覧（表示順）.
 	 * @return array
 	 */
-	private function get_clean_root_menues( array $selected_menues, array $menu_folders = array() ): array {
-		$items_by_position = array();
-		$raw_menu           = $GLOBALS['menu'] ?? array();
-		$existing_slugs     = array();
+	public function get_root_menu_items( array $selected_items, array $folder_nodes = array() ): array {
+		$items          = array();
+		$raw_menu       = $GLOBALS['menu'] ?? array();
+		$existing_slugs = array();
+		$folder_slugs   = wp_list_pluck( $folder_nodes, 'slug' );
 
-		// 1. 現在除外されている選択済みスラグと position のマップを作成
-		$selected_slugs_map = array();
-		foreach ( $selected_menues as $sel ) {
-			if ( ! empty( $sel['menu_slug'] ) ) {
-				$pos = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
-				$selected_slugs_map[ $sel['menu_slug'] ] = $pos;
+		// 1. フォルダーへ移動済み（$menu から除外されている）項目のスラグと元の位置のマップを作成
+		$selected_positions = array();
+		foreach ( $selected_items as $selected ) {
+			if ( ! empty( $selected['menu_slug'] ) ) {
+				$selected_positions[ $selected['menu_slug'] ] = (float) ( $selected['data']['original_position'] ?? 999.0 );
 			}
 		}
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Checking WordPress core filter "custom_menu_order".
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPressコアのフィルター "custom_menu_order" の状態を参照しているだけで、独自フックの定義ではない.
 		$is_custom_menu_order = apply_filters( 'custom_menu_order', false );
 
-		// 2. 現在の $menu から未選択項目を取得 (custom_menu_order 有効時のみ前詰まりオフセット補正を適用)
-		foreach ( $raw_menu as $pos => $item ) {
-			if ( empty( $item[0] ) || ( isset( $item[4] ) && strpos( $item[4], 'wp-menu-separator' ) !== false ) ) {
+		// 2. 現在の $menu から未格納の項目を取得（custom_menu_order 有効時のみ前詰まりオフセットを補正）
+		foreach ( $raw_menu as $position => $menu_item ) {
+			if ( empty( $menu_item[0] ) || empty( $menu_item[2] ) ) {
 				continue;
 			}
 
-			$slug = $item[2];
-
-			// フォルダーメニュー項目（kamf- で始まるもの）はステップ3で末尾に一括マージするためスキップ
-			if ( str_starts_with( $slug, 'kamf-' ) || 'karasunouta-admin-menu-folder' === $slug ) {
+			if ( isset( $menu_item[4] ) && str_contains( $menu_item[4], 'wp-menu-separator' ) ) {
 				continue;
 			}
-			$clean_title = trim( preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $item[0] ) );
-			$icon_class  = $item[6] ?? 'dashicons-admin-generic';
+
+			$slug = $menu_item[2];
+
+			// フォルダーの親ノードと自身の設定ページはステップ4で末尾へ配置する
+			if ( in_array( $slug, $folder_slugs, true ) || Main::SETTINGS_PAGE_SLUG === $slug ) {
+				continue;
+			}
+
+			$title      = trim( (string) preg_replace( '/\s*<span.*?>.*?<\/span>/i', '', $menu_item[0] ) );
+			$icon_class = $menu_item[6] ?? 'dashicons-admin-generic';
 
 			$url = $slug;
 			if ( ! str_contains( $slug, '.php' ) && ! str_contains( $slug, 'http' ) ) {
 				$url = 'admin.php?page=' . $slug;
 			}
 
-			$calc_pos = (float) $pos;
+			$calculated_position = (float) $position;
 
 			// キー連番前詰め環境 (custom_menu_order 有効) の場合のみオフセット補正を適用
 			if ( $is_custom_menu_order ) {
 				$offset = 0;
-				foreach ( $selected_slugs_map as $sel_slug => $sel_pos ) {
-					if ( $sel_pos <= ( $calc_pos + $offset ) ) {
+				foreach ( $selected_positions as $selected_position ) {
+					if ( $selected_position <= ( $calculated_position + $offset ) ) {
 						$offset++;
 					}
 				}
-				$calc_pos += $offset;
+				$calculated_position += $offset;
 			}
 
-			$items_by_position[] = array(
+			$items[] = array(
 				'slug'       => $slug,
-				'title'      => $clean_title,
+				'title'      => wp_strip_all_tags( $title ),
 				'url'        => $url,
-				'position'   => $calc_pos,
-				'icon_class' => $icon_class,
-				'icon_html'  => $this->build_icon_html( $icon_class ),
+				'position'   => $calculated_position,
+				'icon_class' => (string) $icon_class,
 			);
 
 			$existing_slugs[] = $slug;
 		}
 
-		// 3. 現在フィルタリングにより $menu から除外されている選択済みメニュー項目を「元の位置」「元のアイコン」で復元マージ
-		foreach ( $selected_menues as $sel ) {
-			$sel_slug = $sel['menu_slug'] ?? '';
-			if ( ! empty( $sel_slug ) && ! in_array( $sel_slug, $existing_slugs, true ) ) {
-				$pos        = isset( $sel['data']['original_position'] ) ? (float) $sel['data']['original_position'] : 999.0;
-				$icon_class = $sel['data']['icon_class'] ?? 'dashicons-admin-generic';
+		// 3. フォルダーへ移動済みで $menu から除外されている項目を「元の位置」「元のアイコン」で復元
+		foreach ( $selected_items as $selected ) {
+			$slug = $selected['menu_slug'] ?? '';
 
-				$url = $sel['data']['url'] ?? $sel_slug;
-				if ( ! str_contains( $url, '.php' ) && ! str_contains( $url, 'http' ) ) {
-					$url = 'admin.php?page=' . $url;
-				}
-
-				$items_by_position[] = array(
-					'slug'       => $sel_slug,
-					'title'      => $sel['title'] ?? $sel_slug,
-					'url'        => $url,
-					'position'   => $pos,
-					'icon_class' => $icon_class,
-					'icon_html'  => $this->build_icon_html( $icon_class ),
-				);
-
-				$existing_slugs[] = $sel_slug;
-			}
-		}
-
-		// 3. サブメニューフォルダー自体を擬似サイドメニュー項目として順序通りに復元マージ
-		$default_folders_to_merge = ! empty( $menu_folders[0] ) ? array( $menu_folders[0] ) : array();
-		$folders_to_merge         = apply_filters( 'kamf_get_clean_root_menues_folders', $default_folders_to_merge, $menu_folders );
-		$positions_list           = array_column( $items_by_position, 'position' );
-		$max_existing             = ! empty( $positions_list ) ? (float) max( $positions_list ) : 999.0;
-		$base_pos                 = (float) max( 999000.0, ceil( $max_existing ) + 100.0 );
-
-		foreach ( $folders_to_merge as $idx => $folder ) {
-			if ( empty( $folder ) ) {
+			if ( '' === $slug || in_array( $slug, $existing_slugs, true ) ) {
 				continue;
 			}
-			$f_id    = $folder['id'] ?? ( 'folder_' . $idx );
-			$f_slug  = 'kamf-' . $f_id;
-			$f_title = $folder['title'] ?? 'Menu Folder';
-			$f_icon  = ! empty( $folder['icon'] ) ? $folder['icon'] : 'dashicons-category';
-			$f_pos   = $base_pos + (float) $idx;
 
-			// 既存のリストから途中に挟まっているフォルダー項目を除去
-			foreach ( $items_by_position as $k => $v ) {
-				if ( isset( $v['slug'] ) && ( $v['slug'] === $f_slug || $v['slug'] === $f_id ) ) {
-					unset( $items_by_position[ $k ] );
-				}
+			$url = $selected['data']['url'] ?? $slug;
+			if ( ! str_contains( $url, '.php' ) && ! str_contains( $url, 'http' ) ) {
+				$url = 'admin.php?page=' . $url;
 			}
 
-			$items_by_position[] = array(
-				'slug'       => $f_slug,
-				'title'      => $f_title,
-				'url'        => 'admin.php?page=' . $f_slug,
-				'position'   => $f_pos,
-				'icon_class' => $f_icon,
-				'icon_html'  => $this->build_icon_html( $f_icon ),
-				'is_folder'  => true,
+			$items[] = array(
+				'slug'       => $slug,
+				'title'      => wp_strip_all_tags( (string) ( $selected['title'] ?? $slug ) ),
+				'url'        => $url,
+				'position'   => (float) ( $selected['data']['original_position'] ?? 999.0 ),
+				'icon_class' => (string) ( $selected['data']['icon_class'] ?? 'dashicons-admin-generic' ),
 			);
 
-			$existing_slugs[] = $f_slug;
+			$existing_slugs[] = $slug;
 		}
 
-		// 4. 元の位置 (position) の数値による厳密な昇順ソート (配列キーの型キャスト揺れ防止)
+		// 4. 元の位置 (position) の数値による厳密な昇順ソート（配列キーの型キャスト揺れ防止）
 		usort(
-			$items_by_position,
+			$items,
 			function ( $a, $b ) {
-				$pos_a = (float) ( $a['position'] ?? 999.0 );
-				$pos_b = (float) ( $b['position'] ?? 999.0 );
-				return $pos_a <=> $pos_b;
+				return ( (float) $a['position'] ) <=> ( (float) $b['position'] );
 			}
 		);
 
-		return $items_by_position;
-	}
+		// 5. フォルダーの親ノードを指定された表示順で末尾へ配置
+		$positions = wp_list_pluck( $items, 'position' );
+		$base      = max( 999000.0, ! empty( $positions ) ? ceil( (float) max( $positions ) ) + 100.0 : 999000.0 );
 
-	/**
-	 * メニュー項目に応じた正しいアイコンHTMLを構築
-	 *
-	 * @param string $icon_class アイコン指定文字列.
-	 * @return string
-	 */
-	private function build_icon_html( string $icon_class ): string {
-		if ( str_contains( $icon_class, 'dashicons-' ) ) {
-			return sprintf( '<span class="dashicons %s"></span>', esc_attr( $icon_class ) );
+		foreach ( $folder_nodes as $index => $node ) {
+			$items[] = array(
+				'slug'       => $node['slug'],
+				'title'      => wp_strip_all_tags( (string) $node['title'] ),
+				'url'        => 'admin.php?page=' . $node['slug'],
+				'position'   => $base + (float) $index,
+				'icon_class' => (string) $node['icon'],
+				'is_folder'  => true,
+				'is_primary' => ! empty( $node['primary'] ),
+			);
 		}
 
-		if ( str_starts_with( $icon_class, 'data:image/' ) ) {
-			return sprintf( '<img src="%s" alt="" class="kamf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />', esc_attr( $icon_class ) );
-		}
-
-		if ( str_contains( $icon_class, 'http://' ) || str_contains( $icon_class, 'https://' ) ) {
-			return sprintf( '<img src="%s" alt="" class="kamf-custom-icon" style="width:18px;height:18px;vertical-align:middle;" />', esc_url( $icon_class ) );
-		}
-
-		if ( str_contains( $icon_class, 'svg' ) ) {
-			return sprintf( '<span class="kamf-svg-icon" style="width:18px;height:18px;display:inline-flex;">%s</span>', wp_kses_post( $icon_class ) );
-		}
-
-		return '<span class="dashicons dashicons-admin-generic"></span>';
+		return $items;
 	}
 }
-

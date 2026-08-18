@@ -4,7 +4,7 @@ Donate link: https://karasunouta.com
 Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -33,8 +33,11 @@ As you install more plugins, your admin sidebar easily becomes cluttered with it
 
 == Frequently Asked Questions ==
 
-= Can I create multiple submenu folders? =
-The standard version supports grouping menu items into 1 main submenu folder. For creating unlimited folders, custom folder icons, custom folder titles, and custom item reordering, please check out Karasunouta Admin Menu Folder Pro.
+= How many menu items can I put in the folder? =
+Up to 99 items. Items are listed inside the folder in the same order as they appear in the original admin sidebar, so the folder stays predictable no matter how many plugins you add.
+
+= What happens if I remove every item from the folder? =
+The folder disappears from the admin sidebar entirely. Nothing is left behind, and every menu item returns to its original position. Add an item again and the folder comes back.
 
 = Will moving menu items change their functionality or permissions? =
 No. Karasunouta Admin Menu Folder only changes the location where menu links are rendered in the admin sidebar. User capabilities and plugin page URLs remain unchanged.
@@ -49,6 +52,14 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 1. Settings page preview showing sidebar menu selection and folder preview.
 
 == Changelog ==
+
+= 1.5.0 =
+* Enhance: Escape all generated output at the point it is printed, and drop every phpcs:ignore annotation so static analysis covers the whole codebase.
+* Enhance: Submit settings as structured form fields instead of a JSON blob, fixing a case where menu titles containing "<" could truncate the saved data.
+* Enhance: Prevent the Settings root menu from being selected, since it was never movable into the folder.
+* Enhance: Use the WordPress settings notice API so the admin notice no longer relies on query arguments.
+* Enhance: Load admin assets only on the plugin settings screen.
+* Refactor: Simplify the stored option structure and expose the folder title, icon, node list and protected slugs through documented filters.
 
 = 1.4.0 =
 * Refactor: Rename plugin to Karasunouta Admin Menu Folder with official slug and prefix kamf per WordPress.org guidelines.
