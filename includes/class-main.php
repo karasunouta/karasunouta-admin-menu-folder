@@ -222,7 +222,7 @@ class Main {
 	/**
 	 * 管理メニュー上のフォルダーノード一覧を表示順に取得
 	 *
-	 * @return array[] slug / title / icon / primary を持つ配列のリスト.
+	 * @return array[] id / slug / title / icon / primary / menues を持つ配列のリスト.
 	 */
 	public function get_folder_nodes(): array {
 		$folder = $this->get_folder();
@@ -234,13 +234,14 @@ class Main {
 				'title'   => $this->get_folder_title( $folder ),
 				'icon'    => $this->get_folder_icon( $folder ),
 				'primary' => true,
+				'menues'  => $folder['menues'],
 			),
 		);
 
 		/**
 		 * 管理メニュー上のフォルダーノード一覧を表示順にフィルタリング
 		 *
-		 * @param array[] $nodes id / slug / title / icon / primary を持つ配列のリスト.
+		 * @param array[] $nodes id / slug / title / icon / primary / menues を持つ配列のリスト.
 		 */
 		$nodes = apply_filters( 'kamf_folder_nodes', $nodes );
 
@@ -255,10 +256,30 @@ class Main {
 				'title'   => (string) ( $node['title'] ?? '' ),
 				'icon'    => ! empty( $node['icon'] ) ? (string) $node['icon'] : 'dashicons-category',
 				'primary' => ! empty( $node['primary'] ),
+				'menues'  => isset( $node['menues'] ) && is_array( $node['menues'] ) ? array_values( $node['menues'] ) : array(),
 			);
 		}
 
 		return $normalized;
+	}
+
+	/**
+	 * すべてのフォルダーに格納されているメニュー項目を取得
+	 *
+	 * @return array
+	 */
+	public function get_all_stored_items(): array {
+		$items = array();
+
+		foreach ( $this->get_folder_nodes() as $node ) {
+			foreach ( $node['menues'] as $item ) {
+				if ( ! empty( $item['menu_slug'] ) ) {
+					$items[ $item['menu_slug'] ] = $item;
+				}
+			}
+		}
+
+		return array_values( $items );
 	}
 
 	/**

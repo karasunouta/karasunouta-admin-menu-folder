@@ -58,17 +58,16 @@ export function appendHiddenField(container, name, value) {
 }
 
 /**
- * フォルダーカードの行要素から送信用フィールドを構築
+ * フォルダーカード内のメニュー項目から送信用フィールドを構築
  *
  * @param {HTMLElement} container 追加先コンテナ
  * @param {HTMLElement} card      フォルダーカード要素
- * @param {string}      baseName  フィールド名の基準（例: kamf_folder）
+ * @param {string}      baseName  フィールド名の基準（例: kamf_folder[menues]）
  * @param {string[]}    skipSlugs 除外するスラグ
  */
-export function appendFolderFields(container, card, baseName, skipSlugs = []) {
-	appendHiddenField(container, `${baseName}[id]`, card.getAttribute('data-folder-id') || 'folder-default');
-
+export function appendItemFields(container, card, baseName, skipSlugs = []) {
 	let index = 0;
+
 	card.querySelectorAll('.kamf-subitem-row').forEach(function (row) {
 		const slug = row.getAttribute('data-slug');
 		if (!slug || skipSlugs.includes(slug)) {
@@ -76,7 +75,7 @@ export function appendFolderFields(container, card, baseName, skipSlugs = []) {
 			return;
 		}
 
-		const prefix = `${baseName}[menues][${index}]`;
+		const prefix = `${baseName}[${index}]`;
 		appendHiddenField(container, `${prefix}[menu_slug]`, slug);
 		appendHiddenField(container, `${prefix}[title]`, row.getAttribute('data-title') || '');
 		appendHiddenField(container, `${prefix}[url]`, row.getAttribute('data-url') || '');
@@ -86,11 +85,25 @@ export function appendFolderFields(container, card, baseName, skipSlugs = []) {
 	});
 }
 
+/**
+ * フォルダーカードから送信用フィールド（識別子とメニュー項目）を構築
+ *
+ * @param {HTMLElement} container 追加先コンテナ
+ * @param {HTMLElement} card      フォルダーカード要素
+ * @param {string}      baseName  フィールド名の基準（例: kamf_folder）
+ * @param {string[]}    skipSlugs 除外するスラグ
+ */
+export function appendFolderFields(container, card, baseName, skipSlugs = []) {
+	appendHiddenField(container, `${baseName}[id]`, card.getAttribute('data-folder-id') || 'folder-default');
+	appendItemFields(container, card, `${baseName}[menues]`, skipSlugs);
+}
+
 // 拡張機能向けに共通ユーティリティを公開
 window.kamfUtils = {
 	escapeHtml,
 	buildIconHtml,
 	appendHiddenField,
+	appendItemFields,
 	appendFolderFields
 };
 
@@ -399,6 +412,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		syncState();
 	});
+
+	// 拡張機能から状態の再同期を要求できるように公開
+	window.kamfAdminSettings = { syncState, getPrimaryCard };
 
 	// 初期状態同期
 	syncState();

@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Karasunouta Admin Menu Folder 1.4.0\n"
+"Project-Id-Version: Karasunouta Admin Menu Folder 1.5.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/karasunouta-admin-menu-folder\n"
 "Last-Translator: karasunouta <info@karasunouta.com>\n"
 "Language-Team: Japanese <ja@li.org>\n"
@@ -10,24 +10,21 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-17T18:54:00+09:00\n"
-"PO-Revision-Date: 2026-08-17 18:54+0900\n"
+"POT-Creation-Date: 2026-08-18T21:13:00+09:00\n"
+"PO-Revision-Date: 2026-08-18 21:13+0900\n"
 "X-Generator: Antigravity AI\n"
 "X-Domain: karasunouta-admin-menu-folder\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. Plugin Name of the plugin
 #: karasunouta-admin-menu-folder.php
-#: includes/class-main.php:244
-#: includes/class-admin-settings.php:45
-#: includes/class-admin-settings.php:46
 msgid "Karasunouta Admin Menu Folder"
 msgstr "Karasunouta Admin Menu Folder"
 
 #. Description of the plugin
 #: karasunouta-admin-menu-folder.php
-msgid "Organizes and stores various WP side menu items into folder structures."
-msgstr "WP サイドメニューの各種メニューをフォルダー構造内に整理・収納するプラグイン。"
+msgid "Organizes and stores various WP side menu items into folder structures (submenus)."
+msgstr "WP サイドメニューの各種メニューをフォルダー構造 (サブメニュー) 内に整理・収納するプラグイン。"
 
 #. Author of the plugin
 #: karasunouta-admin-menu-folder.php
@@ -39,116 +36,90 @@ msgstr "karasunouta"
 msgid "https://karasunouta.com"
 msgstr "https://karasunouta.com"
 
-#: includes/class-admin-menu-filter.php:177
-#: includes/class-admin-menu-filter.php:180
-#: includes/class-admin-menu-filter.php:185
-#: includes/class-admin-menu-filter.php:188
+#: karasunouta-admin-menu-folder.php:54
+msgid "Settings"
+msgstr "設定"
+
+#: includes/class-admin-menu-filter.php:179
+#: includes/class-admin-menu-filter.php:182
 msgid "Menu Folder Settings"
 msgstr "Menu Folder 設定"
 
-#: includes/class-admin-settings.php:57
-#: includes/class-admin-settings.php:58
-msgid "Menu Folder"
-msgstr "Menu Folder"
+#: includes/class-admin-settings.php:45
+#: includes/class-admin-settings.php:46
+#: includes/class-main.php:472
+msgid "Admin Menu Folder"
+msgstr "Admin Menu Folder"
 
-#: includes/class-admin-settings.php:76
+#: includes/class-admin-settings.php:75
+#: includes/class-admin-settings.php:124
 msgid "You do not have sufficient permissions to perform this action."
 msgstr "この操作を行う権限がありません。"
 
-#: includes/class-admin-settings.php:165
-#: includes/class-admin-settings.php:235
-msgid "You do not have sufficient permissions to access this page."
-msgstr "このページにアクセスする権限がありません。"
+#: includes/class-admin-settings.php:101
+msgid "Settings saved."
+msgstr "設定を保存しました。"
 
-#: includes/class-admin-settings.php:218
-msgid "Move Up"
-msgstr "上へ"
+#: includes/class-admin-settings.php:134
+msgid "Settings reset to default."
+msgstr "設定をデフォルトに復元しました。"
 
-#: includes/class-admin-settings.php:219
-msgid "Move Down"
-msgstr "下へ"
-
-#: includes/class-admin-settings.php:220
-msgid "Move Left"
-msgstr "左へ"
-
-#: includes/class-admin-settings.php:221
-msgid "Move Right"
-msgstr "右へ"
-
-#: includes/class-admin-settings.php:222
-msgid "Edit Folder"
-msgstr "フォルダーを編集"
-
-#: includes/class-admin-settings.php:223
-msgid "Delete Folder"
-msgstr "フォルダーを削除"
-
-#: includes/class-admin-settings.php:224
-#: includes/class-admin-settings.php:382
+#: includes/class-admin-settings.php:205
+#: includes/class-admin-settings.php:453
 msgid "Remove Item"
-msgstr "項目を解除"
+msgstr "項目を外す"
 
-#: includes/class-admin-settings.php:225
-msgid "Are you sure you want to delete this folder? Stored menu items will be restored."
-msgstr "このフォルダーを削除してもよろしいですか ? 格納されているメニュー項目は復元されます。"
-
-#: includes/class-admin-settings.php:226
+#: includes/class-admin-settings.php:206
 msgid "Are you sure you want to reset Karasunouta Admin Menu Folder settings to default?"
 msgstr "Karasunouta Admin Menu Folder の設定をデフォルトに復元してもよろしいですか ?"
 
 #. translators: %d: Maximum allowed items
-#: includes/class-admin-settings.php:229
+#: includes/class-admin-settings.php:209
 #, php-format
 msgid "You can store up to %d menu items per folder."
-msgstr "1フォルダーあたり最大 %d 件のメニュー項目を格納できます。"
+msgstr "各フォルダーに格納できる項目は最大 %d 件です。"
 
-#: includes/class-admin-settings.php:231
-#: includes/class-admin-settings.php:366
+#: includes/class-admin-settings.php:212
+#: includes/class-admin-settings.php:428
 msgid "No menu items selected"
 msgstr "メニュー項目が選択されていません"
 
-#: includes/class-admin-settings.php:263
+#: includes/class-admin-settings.php:222
+msgid "You do not have sufficient permissions to access this page."
+msgstr "このページにアクセスする権限がありません。"
+
+#: includes/class-admin-settings.php:247
 msgid "Admin Menu Folder Settings"
 msgstr "Admin Menu Folder 設定"
 
-#: includes/class-admin-settings.php:273
+#: includes/class-admin-settings.php:253
 msgid "Reset to Default"
 msgstr "デフォルトに復元"
 
-#: includes/class-admin-settings.php:283
-msgid "Settings saved."
-msgstr "設定を保存しました。"
-
-#: includes/class-admin-settings.php:289
-msgid "Settings reset to default."
-msgstr "設定をデフォルトに復元しました。"
-
-#: includes/class-admin-settings.php:396
+#: includes/class-admin-settings.php:342
 msgid "Show link to settings page in Toolbar:"
 msgstr "ツールバーに設定ページへのリンクを表示: "
 
-#: includes/class-admin-settings.php:403
+#: includes/class-admin-settings.php:349
 msgid "Add settings menu to Menu Folder:"
 msgstr "Menu Folder に設定メニューを追加: "
 
-#: includes/class-admin-settings.php:407
+#: includes/class-admin-settings.php:353
 msgid "Do not add"
 msgstr "追加しない"
 
-#: includes/class-admin-settings.php:408
+#: includes/class-admin-settings.php:354
 msgid "Add to top"
 msgstr "先頭に追加"
 
-#: includes/class-admin-settings.php:409
+#: includes/class-admin-settings.php:355
 msgid "Add to bottom"
 msgstr "末尾に追加"
 
-#: includes/class-admin-settings.php:415
+#: includes/class-admin-settings.php:361
 msgid "Save Changes"
 msgstr "変更を保存"
 
-#: karasunouta-admin-menu-folder.php:53
-msgid "Settings"
-msgstr "設定"
-
+#: includes/class-main.php:187
+msgid "Menu Folder"
+msgstr "Menu Folder"

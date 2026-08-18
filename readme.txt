@@ -54,7 +54,7 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 == Changelog ==
 
 = 1.5.0 =
-* Enhance: Escape all generated output at the point it is printed, and drop every phpcs:ignore annotation so static analysis covers the whole codebase.
+* Enhance: Escape every generated value at the point it is printed, and remove all static analysis suppressions so the whole codebase is checked.
 * Enhance: Submit settings as structured form fields instead of a JSON blob, fixing a case where menu titles containing "<" could truncate the saved data.
 * Enhance: Prevent the Settings root menu from being selected, since it was never movable into the folder.
 * Enhance: Use the WordPress settings notice API so the admin notice no longer relies on query arguments.

@@ -77,18 +77,19 @@ class Settings_Page {
 
 		check_admin_referer( 'kamf_save_settings_action', 'kamf_save_settings_nonce' );
 
-		$raw_folder = array();
+		$options = $this->main->get_raw_options();
+
+		// フォルダーのフィールドが送信されていない場合は既存の内容を維持する
 		if ( isset( $_POST['kamf_folder'] ) && is_array( $_POST['kamf_folder'] ) ) {
-			$raw_folder = map_deep( wp_unslash( $_POST['kamf_folder'] ), 'sanitize_text_field' );
+			$raw_folder        = map_deep( wp_unslash( $_POST['kamf_folder'] ), 'sanitize_text_field' );
+			$options['folder'] = $this->main->sanitize_folder( $raw_folder, $this->main->get_protected_slugs() );
 		}
 
 		$raw_link_position = isset( $_POST['kamf_setting_link_position'] )
 			? sanitize_text_field( wp_unslash( $_POST['kamf_setting_link_position'] ) )
 			: 'none';
 
-		$options                          = $this->main->get_raw_options();
 		$options['version']               = KAMF_VERSION;
-		$options['folder']                = $this->main->sanitize_folder( $raw_folder, $this->main->get_protected_slugs() );
 		$options['show_admin_bar_link']   = isset( $_POST['kamf_show_admin_bar_link'] );
 		$options['setting_link_position'] = $this->main->normalize_setting_link_position( $raw_link_position );
 
@@ -235,8 +236,10 @@ class Settings_Page {
 			'menues'  => $folder['menues'],
 		);
 
-		$available_menues = $this->get_root_menu_items( $folder['menues'], $folder_nodes );
-		$selected_slugs   = wp_list_pluck( $folder['menues'], 'menu_slug' );
+		// フォルダーへ移動済みの項目は $menu から除外されているため、全フォルダー分を復元対象とする
+		$stored_items     = $this->main->get_all_stored_items();
+		$available_menues = $this->get_root_menu_items( $stored_items, $folder_nodes );
+		$selected_slugs   = wp_list_pluck( $stored_items, 'menu_slug' );
 		$protected_slugs  = $this->main->get_protected_slugs();
 
 		?>
@@ -293,6 +296,7 @@ class Settings_Page {
 									}
 									?>
 									<li class="<?php echo esc_attr( implode( ' ', $item_classes ) ); ?>"
+										data-folder-node="<?php echo esc_attr( $is_folder ? '1' : '0' ); ?>"
 										data-slug="<?php echo esc_attr( $slug ); ?>"
 										data-title="<?php echo esc_attr( $item['title'] ); ?>"
 										data-url="<?php echo esc_attr( $item['url'] ); ?>"
