@@ -42,6 +42,9 @@ The folder disappears from the admin sidebar entirely. Nothing is left behind, a
 = Will moving menu items change their functionality or permissions? =
 No. Karasunouta Admin Menu Folder only changes the location where menu links are rendered in the admin sidebar. User capabilities and plugin page URLs remain unchanged.
 
+= Why can't I move the 'Settings' menu into the folder? =
+The 'Settings' (options-general.php) root menu is intentionally protected as a core system menu and cannot be moved into a folder. Because 'Settings' serves as the primary hub for essential WordPress configuration screens (General, Reading, Permalinks, etc.) as well as this plugin's own settings page, keeping it always directly accessible in the main sidebar ensures seamless administration and prevents navigation conflicts.
+
 = How do I access child menu items of a menu item placed inside a folder? =
 Click on the menu item inside the folder (e.g., Submenu Folder > Target Menu). This opens the parent page and expands its submenu structure in the sidebar, allowing you to access all of its child items.
 
