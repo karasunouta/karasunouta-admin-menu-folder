@@ -533,6 +533,31 @@ class Settings_Page {
 	}
 
 	/**
+	 * 管理メニューのキーが 0 から始まる連番へ前詰めされているかを判定
+	 *
+	 * WordPress は他プラグインがメニュー順を差し替えた場合に $menu のキーを連番へ
+	 * 振り直す。その環境では元のメニュー位置がキーから読み取れなくなるため、
+	 * フォルダーへ移動した項目の数だけ位置を補正する必要がある。
+	 *
+	 * @param array $raw_menu グローバル $menu 配列.
+	 * @return bool
+	 */
+	private function has_compacted_menu_keys( array $raw_menu ): bool {
+		if ( count( $raw_menu ) < 2 ) {
+			return false;
+		}
+
+		$keys = array_keys( $raw_menu );
+		foreach ( $keys as $index => $key ) {
+			if ( ! is_numeric( $key ) || (int) $key !== $index ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * 擬似サイドメニュー用に、ルートメニュー項目を「元の位置」「元のアイコン」で再構成して取得
 	 *
 	 * @param array $selected_items フォルダーに格納されているメニュー項目.
@@ -553,10 +578,9 @@ class Settings_Page {
 			}
 		}
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPressコアのフィルター "custom_menu_order" の状態を参照しているだけで、独自フックの定義ではない.
-		$is_custom_menu_order = apply_filters( 'custom_menu_order', false );
+		$is_compacted_menu = $this->has_compacted_menu_keys( $raw_menu );
 
-		// 2. 現在の $menu から未格納の項目を取得（custom_menu_order 有効時のみ前詰まりオフセットを補正）
+		// 2. 現在の $menu から未格納の項目を取得（キーが前詰めされている環境のみオフセットを補正）
 		foreach ( $raw_menu as $position => $menu_item ) {
 			if ( empty( $menu_item[0] ) || empty( $menu_item[2] ) ) {
 				continue;
@@ -583,8 +607,8 @@ class Settings_Page {
 
 			$calculated_position = (float) $position;
 
-			// キー連番前詰め環境 (custom_menu_order 有効) の場合のみオフセット補正を適用
-			if ( $is_custom_menu_order ) {
+			// キーが前詰めされている環境の場合のみオフセット補正を適用
+			if ( $is_compacted_menu ) {
 				$offset = 0;
 				foreach ( $selected_positions as $selected_position ) {
 					if ( $selected_position <= ( $calculated_position + $offset ) ) {
