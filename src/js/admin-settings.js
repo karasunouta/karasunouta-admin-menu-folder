@@ -110,7 +110,7 @@ window.kamfUtils = {
 document.addEventListener('DOMContentLoaded', function () {
 
 	/**
-	 * URLから settings-updated=true を静かに消去（F5時の重複メッセージ表示防止）
+	 * URLから kamf_updated, kamf_reset, settings-updated 等を静かに消去（F5時の重複メッセージ表示防止）
 	 */
 	function cleanUrlQuery() {
 		if (!window.history || !window.history.replaceState) {
@@ -118,11 +118,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		const search = window.location.search;
-		if (!search.includes('settings-updated=')) {
+		if (!search.includes('kamf_updated=') && !search.includes('kamf_reset=') && !search.includes('settings-updated=')) {
 			return;
 		}
 
 		const cleanSearch = search
+			.replace(/([?&])kamf_updated=[^&]*(&|$)/, '$1')
+			.replace(/([?&])kamf_reset=[^&]*(&|$)/, '$1')
 			.replace(/([?&])settings-updated=[^&]*(&|$)/, '$1')
 			.replace(/[?&]$/, '');
 		window.history.replaceState({}, document.title, window.location.pathname + cleanSearch + window.location.hash);

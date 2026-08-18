@@ -95,13 +95,6 @@ class Settings_Page {
 
 		$this->main->save_options( $options );
 
-		add_settings_error(
-			'kamf_messages',
-			'kamf_settings_saved',
-			__( 'Settings saved.', 'karasunouta-admin-menu-folder' ),
-			'success'
-		);
-
 		/**
 		 * 設定の保存完了直後（リダイレクト前）に発火
 		 *
@@ -109,7 +102,8 @@ class Settings_Page {
 		 */
 		do_action( 'kamf_after_save_settings', $options );
 
-		$this->redirect_with_notices();
+		wp_safe_redirect( $this->main->get_settings_url( array( 'kamf_updated' => '1' ) ) );
+		exit;
 	}
 
 	/**
@@ -128,29 +122,12 @@ class Settings_Page {
 
 		$this->main->reset_options();
 
-		add_settings_error(
-			'kamf_messages',
-			'kamf_settings_reset',
-			__( 'Settings reset to default.', 'karasunouta-admin-menu-folder' ),
-			'success'
-		);
-
 		/**
 		 * 設定のリセット完了直後（リダイレクト前）に発火
 		 */
 		do_action( 'kamf_after_reset_settings' );
 
-		$this->redirect_with_notices();
-	}
-
-	/**
-	 * 管理通知を引き継いだ状態で設定ページへリダイレクト
-	 */
-	private function redirect_with_notices() {
-		// WordPress標準の仕組みでリダイレクト後も通知を表示する
-		set_transient( 'settings_errors', get_settings_errors(), 30 );
-
-		wp_safe_redirect( $this->main->get_settings_url( array( 'settings-updated' => 'true' ) ) );
+		wp_safe_redirect( $this->main->get_settings_url( array( 'kamf_reset' => '1' ) ) );
 		exit;
 	}
 
@@ -263,6 +240,17 @@ class Settings_Page {
 
 			<hr class="wp-header-end">
 
+			<?php if ( isset( $_GET['kamf_updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+				<div class="notice notice-success is-dismissible">
+					<p><?php esc_html_e( 'Settings saved.', 'karasunouta-admin-menu-folder' ); ?></p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( isset( $_GET['kamf_reset'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+				<div class="notice notice-success is-dismissible">
+					<p><?php esc_html_e( 'Settings reset to default.', 'karasunouta-admin-menu-folder' ); ?></p>
+				</div>
+			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( $this->main->get_settings_url() ); ?>" id="kamf-settings-form">
 				<?php wp_nonce_field( 'kamf_save_settings_action', 'kamf_save_settings_nonce' ); ?>
