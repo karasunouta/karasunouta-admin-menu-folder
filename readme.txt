@@ -55,7 +55,7 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 
 = 1.5.1 =
 * Fix: Ensure settings saved notification renders cleanly in-place without visual layout shifts.
-* Enhance: Automatically sort menu items in the folder by their original WordPress menu positions with the developer filter hook `kamf_folder_items`.
+* Enhance: Automatically sort menu items in the folder by their original WordPress menu positions, and add the `kamf_folder_items` filter hook for custom ordering.
 
 = 1.5.0 =
 * Enhance: Escape every generated value at the point it is printed, and remove all static analysis suppressions so the whole codebase is checked.
