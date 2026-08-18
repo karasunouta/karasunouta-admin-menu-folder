@@ -4,7 +4,7 @@ Donate link: https://karasunouta.com
 Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -53,11 +53,14 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 
 == Changelog ==
 
+= 1.5.1 =
+* Fix: Ensure settings saved notification renders cleanly in-place without visual layout shifts.
+* Enhance: Automatically sort menu items in the folder by their original WordPress menu positions with the developer filter hook `kamf_folder_items`.
+
 = 1.5.0 =
 * Enhance: Escape every generated value at the point it is printed, and remove all static analysis suppressions so the whole codebase is checked.
 * Enhance: Submit settings as structured form fields instead of a JSON blob, fixing a case where menu titles containing "<" could truncate the saved data.
 * Enhance: Prevent the Settings root menu from being selected, since it was never movable into the folder.
-* Enhance: Use the WordPress settings notice API so the admin notice no longer relies on query arguments.
 * Enhance: Load admin assets only on the plugin settings screen.
 * Refactor: Simplify the stored option structure and expose the folder title, icon, node list and protected slugs through documented filters.
 
@@ -65,7 +68,7 @@ Why this design? WordPress admin menus natively support only up to 2 levels of h
 * Refactor: Rename plugin to Karasunouta Admin Menu Folder with official slug and prefix kamf per WordPress.org guidelines.
 
 = 1.3.0 =
-* Enhance: Introduce wp.hooks extension architecture for modular Pro add-on integration.
+* Enhance: Introduce wp.hooks extension architecture for modular frontend integration.
 * Enhance: Improve folder slug and title synchronization with registered admin menu nodes.
 * Refactor: Align codebase and internal naming with WordPress.org coding standards.
 
