@@ -1,10 +1,10 @@
 === Karasunouta Admin Menu Folder ===
 Contributors: karasunouta
 Donate link: https://karasunouta.com
-Tags: admin menu, menu organizer, menu editor, wordpress admin, dashboard
+Tags: admin menu, admin menu folder, submenu folder, menu organizer, menu editor
 Requires at least: 6.4
-Tested up to: 7.0
-Stable tag: 1.5.1
+Tested up to: 7.1
+Stable tag: 1.5.1.1
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -68,6 +68,9 @@ For larger websites or advanced administration workflows, Karasunouta Admin Menu
 
 == Changelog ==
 
+= 1.5.1.1 =
+* Docs: Update tags and verified compatibility with WordPress 7.1.
+
 = 1.5.1 =
 * Fix: Ensure settings saved notification renders cleanly in-place without visual layout shifts.
 * Enhance: Automatically sort menu items in the folder by their original WordPress menu positions, and add the `kamf_folder_items` filter hook for custom ordering.
@@ -104,4 +107,4 @@ For larger websites or advanced administration workflows, Karasunouta Admin Menu
 
 The source code for this plugin is available on GitHub:
 https://github.com/karasunouta/karasunouta-admin-menu-folder
-
+
