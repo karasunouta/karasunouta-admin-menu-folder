@@ -1,0 +1,17 @@
+name: Deploy to WordPress.org
+on:
+    push:
+        tags:
+            - '*' # v1.5.1 などのタグがプッシュされたら動作
+
+jobs:
+    tag:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: WordPress.org Deploy
+              uses: 10up/action-wordpress-plugin-deploy@stable
+              env:
+                  SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+                  SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+                  SLUG: karasunouta-admin-menu-folder

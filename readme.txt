@@ -50,9 +50,21 @@ Click on the menu item inside the folder (e.g., Submenu Folder > Target Menu). T
 
 Why this design? WordPress admin menus natively support only up to 2 levels of hierarchy. Forcibly hacking or overriding core menu scripts to create deep nested dropdowns risks breaking layout compatibility and causing conflicts with other plugins or future WordPress updates. Our clean, core-compliant approach provides a safe, reliable, and practical 3-tier menu experience without stability risks.
 
+== Optional Pro Version ==
+
+For larger websites or advanced administration workflows, Karasunouta Admin Menu Folder Pro is also available with additional capabilities:
+
+* **Multiple Folders**: Create and organize multiple dedicated folders (e.g., Tools, Marketing, Settings).
+* **Custom Folder Icons & Titles**: Assign distinct icons and custom names to each folder.
+* **Flexible Reordering**: Freely customize the display order of folders in the sidebar and rearrange menu items inside each folder.
+
 == Screenshots ==
 
-1. Settings page preview showing sidebar menu selection and folder preview.
+1. Settings screen — intuitive toggle checkboxes and real-time folder preview.
+2. Before configuration — admin sidebar cluttered with many third-party plugin menus.
+3. After configuration — selected menus are cleanly aggregated into a single folder.
+4. Accessing stored items — expanding the folder to navigate to a stored menu (e.g., selecting "Menu Folder > LightStart").
+5. Preserved submenu functionality — opening a stored plugin (such as LightStart) displays its screen and seamlessly reveals all of its native child items (e.g., "LightStart > About us") in the sidebar.
 
 == Changelog ==
 
